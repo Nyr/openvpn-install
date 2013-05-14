@@ -10,7 +10,7 @@ Run the script and follow the assistant:
 
 Once it ends, you can run it again to add more users.
 
-###I want to run my own VPN but don't have a server for that. Where can I get one?
+###I want to run my own VPN but don't have a server for that
 There are reliable providers where you can get a little VPS for even less than one buck a month.
 
 **US:**
