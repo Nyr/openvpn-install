@@ -161,7 +161,7 @@ else
 	# Listen at port 53 too if user wants that
 	if [ $ALTPORT = 'y' ]; then
 		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194
-		echo "iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194" >> /etc/rc.local
+		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194" /etc/rc.local
 	fi
 	# Enable net.ipv4.ip_forward for the system
 	sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -169,7 +169,7 @@ else
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	# Set iptables
 	iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
-	echo "iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" >> /etc/rc.local
+	sed -i "/# By default this script does nothing./a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
 	# And finally, restart OpenVPN
 	/etc/init.d/openvpn restart
 	# Let's generate the client config
