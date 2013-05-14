@@ -24,11 +24,11 @@ fi
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
 # Sorry for doing this, I didn't want to :(
-echo "$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}')" | grep -q '.'
+echo "$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}' | grep -q '.' | head -1)"
 if [ ! $? = 0 ]; then
 	IP=$(wget -qO- ipv4.icanhazip.com)
 else
-	IP=$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}')
+	IP=$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}' | grep '.' | head -1)
 fi
 
 # We will use this later
