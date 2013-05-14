@@ -43,10 +43,11 @@ if [ -e /etc/openvpn/server.conf ]; then
 		echo "What do you want to do?"
 		echo ""
 		echo "1) Add a cert for a new user"
-		echo "2) Remove OpenVPN"
-		echo "3) Exit"
+		echo "2) Revoke existing user cert"
+		echo "3) Remove OpenVPN"
+		echo "4) Exit"
 		echo ""
-		read -p "Select an option [1-3]:" option
+		read -p "Select an option [1-4]:" option
 		case $option in
 			1) 
 			echo ""
@@ -75,7 +76,17 @@ if [ -e /etc/openvpn/server.conf ]; then
 			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
 			exit
 			;;
-			2) 
+			2)
+			echo ""
+			echo "Tell me the existing client name"
+			read -p "Client name: " -e -i client CLIENT
+			. /etc/openvpn/easy-rsa/2.0/vars
+			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
+			echo ""
+			echo "Certificate for client $CLIENT revoked"
+			exit
+			;;
+			3) 
 			apt-get remove --purge -y openvpn openvpn-blacklist
 			rm -r /etc/openvpn
 			rm -r /usr/share/doc/openvpn
@@ -85,7 +96,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			echo "OpenVPN removed!"
 			exit
 			;;
-			3) exit;;
+			4) exit;;
 		esac
 	done
 else
