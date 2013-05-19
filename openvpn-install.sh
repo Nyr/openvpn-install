@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 # OpenVPN road warrior installer for Debian-based distros
 
 # This script will only work on Debian-based systems. It isn't bulletproof but
