@@ -23,16 +23,10 @@ fi
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
-# Sorry for doing this, I didn't want to :(
-echo "$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}' | grep -q '.' | head -1)"
-if [ ! $? = 0 ]; then
-	IP=$(wget -qO- ipv4.icanhazip.com)
-else
-	IP=$(grep address /etc/network/interfaces | grep -v 127.0.0.1  | awk '{print $2}' | grep '.' | head -1)
+IP=$(ifconfig | grep 'inet addr:' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d: -f2 | awk '{ print $1}')
+if [ "$IP" = "" ]; then
+        IP=$(wget -qO- ipv4.icanhazip.com)
 fi
-
-# We will use this later
-EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
 
 
 if [ -e /etc/openvpn/server.conf ]; then
@@ -80,10 +74,19 @@ if [ -e /etc/openvpn/server.conf ]; then
 			echo ""
 			echo "Tell me the existing client name"
 			read -p "Client name: " -e -i client CLIENT
+			cd /etc/openvpn/easy-rsa/2.0/
 			. /etc/openvpn/easy-rsa/2.0/vars
 			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
-			echo ""
-			echo "Certificate for client $CLIENT revoked"
+			# If it's the first time revoking a cert, we need to add the crl-verify line
+			if grep -q "crl-verify" "/etc/openvpn/server.conf"; then
+			        echo ""
+			        echo "Certificate for client $CLIENT revoked"
+			else
+			        echo "crl-verify /etc/openvpn/easy-rsa/2.0/keys/crl.pem" >> "/etc/openvpn/server.conf"
+			        /etc/init.d/openvpn restart
+			        echo ""
+			        echo "Certificate for client $CLIENT revoked"
+			fi
 			exit
 			;;
 			3) 
@@ -174,6 +177,20 @@ else
 	/etc/init.d/openvpn restart
 	# Let's generate the client config
 	mkdir ~/ovpn-$CLIENT
+	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
+	# users
+	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
+	if [ "$IP" != "$EXTERNALIP" ]; then
+		echo ""
+		echo "Looks like your server is behind a NAT!"
+		echo ""
+		echo "If your server is NATed (LowEndSpirit), I need to know the external IP"
+		echo "If that's not the case, just ignore this and leave the next field blank"
+		read -p "External IP:" -e USEREXTERNALIP
+		if [ $USEREXTERNALIP != "" ]; then
+			IP=$USEREXTERNALIP
+		fi
+	fi
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
@@ -192,11 +209,4 @@ else
 	echo ""
 	echo "Your client config is available at ~/ovpn-$CLIENT.tar.gz"
 	echo "If you want to add more clients, you simply need to run this script another time!"
-	# Try to detect a NATed connection and show a warning to potential
-	# LowEndSpirit users
-	if [ "$IP" != "$EXTERNALIP" ]; then
-		echo ""
-		echo "If you are running this on a LowEndSpirit VPS, please take a minute to read:"
-		echo "http://cl.ly/OuSW"
-	fi
 fi
