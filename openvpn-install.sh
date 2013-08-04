@@ -165,6 +165,7 @@ else
 	cd /etc/openvpn/
 	# Set the server configuration
 	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
+	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 129.250.35.250"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 74.82.42.42"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
