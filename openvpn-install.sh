@@ -5,8 +5,6 @@
 # it will probably work if you simply want to setup a VPN on your Debian/Ubuntu
 # VPS. It has been designed to be as unobtrusive and universal as possible.
 
-# Last update, May 14, 2013 by Nyr
-
 
 if [ $USER != 'root' ]; then
 	echo "Sorry, you need to run this as root"
@@ -134,6 +132,7 @@ else
 		tar xzf ~/easy-rsa.tar.gz -C ~/
 		mkdir -p /etc/openvpn/easy-rsa/2.0/
 		cp ~/easy-rsa-master/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
+		rm -r ~/easy-rsa-master
 	fi
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
