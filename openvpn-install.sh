@@ -79,13 +79,13 @@ if [ -e /etc/openvpn/server.conf ]; then
 			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
 			# If it's the first time revoking a cert, we need to add the crl-verify line
 			if grep -q "crl-verify" "/etc/openvpn/server.conf"; then
-			        echo ""
-			        echo "Certificate for client $CLIENT revoked"
+				echo ""
+				echo "Certificate for client $CLIENT revoked"
 			else
-			        echo "crl-verify /etc/openvpn/easy-rsa/2.0/keys/crl.pem" >> "/etc/openvpn/server.conf"
-			        /etc/init.d/openvpn restart
-			        echo ""
-			        echo "Certificate for client $CLIENT revoked"
+				echo "crl-verify /etc/openvpn/easy-rsa/2.0/keys/crl.pem" >> "/etc/openvpn/server.conf"
+				/etc/init.d/openvpn restart
+				echo ""
+				echo "Certificate for client $CLIENT revoked"
 			fi
 			exit
 			;;
@@ -128,10 +128,18 @@ else
 	read -n1 -r -p "Press any key to continue..."
 	apt-get update
 	apt-get install openvpn iptables openssl -y
-	cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
+	# easy-rsa isn't available by default for Debian Jessie and newer
+	if [ ! -d /etc/openvpn/easy-rsa/2.0/ ]; then
+		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/master.tar.gz
+		tar xzf ~/easy-rsa.tar.gz -C ~/
+		mkdir -p /etc/openvpn/easy-rsa/2.0/
+		cp ~/easy-rsa-master/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
+	fi
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
 	cp -u -p openssl-1.0.0.cnf openssl.cnf
+	# Fuck you NSA - 1024 bits was the default for Debian Wheezy and older
+	sed -i 's|export KEY_SIZE=1024|export KEY_SIZE=2048|' /etc/openvpn/easy-rsa/2.0/vars
 	# Create the PKI
 	. /etc/openvpn/easy-rsa/2.0/vars
 	. /etc/openvpn/easy-rsa/2.0/clean-all
@@ -154,10 +162,10 @@ else
 	gunzip -d server.conf.gz
 	cp server.conf /etc/openvpn/
 	cd /etc/openvpn/easy-rsa/2.0/keys
-	cp ca.crt ca.key dh1024.pem server.crt server.key /etc/openvpn
+	cp ca.crt ca.key dh2048.pem server.crt server.key /etc/openvpn
 	cd /etc/openvpn/
 	# Set the server configuration
-	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
+	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 129.250.35.250"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 74.82.42.42"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
@@ -186,7 +194,7 @@ else
 		echo ""
 		echo "If your server is NATed (LowEndSpirit), I need to know the external IP"
 		echo "If that's not the case, just ignore this and leave the next field blank"
-		read -p "External IP:" -e USEREXTERNALIP
+		read -p "External IP: " -e USEREXTERNALIP
 		if [ $USEREXTERNALIP != "" ]; then
 			IP=$USEREXTERNALIP
 		fi
