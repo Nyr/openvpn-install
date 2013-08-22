@@ -63,7 +63,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
 			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
 			cd ~/
-			rm -r ovpn-$CLIENT
+			rm -rf ovpn-$CLIENT
 			echo ""
 			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
 			exit
@@ -89,8 +89,8 @@ if [ -e /etc/openvpn/server.conf ]; then
 			;;
 			3) 
 			apt-get remove --purge -y openvpn openvpn-blacklist
-			rm -r /etc/openvpn
-			rm -r /usr/share/doc/openvpn
+			rm -rf /etc/openvpn
+			rm -rf /usr/share/doc/openvpn
 			sed -i '/--dport 53 -j REDIRECT --to-port 1194/d' /etc/rc.local
 			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 			echo ""
@@ -132,7 +132,7 @@ else
 		tar xzf ~/easy-rsa.tar.gz -C ~/
 		mkdir -p /etc/openvpn/easy-rsa/2.0/
 		cp ~/easy-rsa-master/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
-		rm -r ~/easy-rsa-master
+		rm -rf ~/easy-rsa-master
 	fi
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
@@ -211,7 +211,7 @@ else
 	sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
 	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
 	cd ~/
-	rm -r ovpn-$CLIENT
+	rm -rf ovpn-$CLIENT
 	echo ""
 	echo "Finished!"
 	echo ""
