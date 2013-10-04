@@ -126,6 +126,7 @@ else
 	read -n1 -r -p "Press any key to continue..."
 	apt-get update
 	apt-get install openvpn iptables openssl -y
+	cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
 	# easy-rsa isn't available by default for Debian Jessie and newer
 	if [ ! -d /etc/openvpn/easy-rsa/2.0/ ]; then
 		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/master.tar.gz
@@ -133,6 +134,7 @@ else
 		mkdir -p /etc/openvpn/easy-rsa/2.0/
 		cp ~/easy-rsa-master/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
 		rm -rf ~/easy-rsa-master
+		rm -rf ~/easy-rsa.tar.gz
 	fi
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
