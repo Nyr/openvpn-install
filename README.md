@@ -16,6 +16,7 @@ There are reliable providers where you can get a little VPS for even less than o
 - [Server Dragon (Tampa, FL and Denver, CO)](http://serverdragon.com/openvz.php)
 - [IperWeb (Dallas, TX)](http://my.iperweb.com/cart/)
 - [HTTP Zoom (Berkshire, UK)](http://httpzoom.com/)
+- [Hostowisko (Poland)](http://www.hostowisko.pl/vps)
 
 If you don't care about sharing an IP address with more people, you should check out the awesome [LowEndSpirit](http://lowendspirit.com/) project. They are providing IPv6-only VPS with NATed IPv4 for only 3€/year.
 
