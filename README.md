@@ -13,10 +13,10 @@ Once it ends, you can run it again to add more users.
 ###I want to run my own VPN but don't have a server for that
 There are reliable providers where you can get a little VPS for even less than one buck a month.
 
-- [Server Dragon (Tampa, FL and Denver, CO)](http://serverdragon.com/openvz.php)
+- [Secure Dragon (Tampa, FL - Denver, CO - Los Angeles, CA - Chicago, IL)](https://securedragon.net/openvz.php)
+- [High Speed Web (Los Angeles, CA)](http://www.highspeedweb.net/)
 - [IperWeb (Dallas, TX)](http://my.iperweb.com/cart/)
 - [HTTP Zoom (Berkshire, UK)](http://httpzoom.com/)
-- [Hostowisko (Poland)](http://www.hostowisko.pl/vps)
 
 If you don't care about sharing an IP address with more people, you should check out the awesome [LowEndSpirit](http://lowendspirit.com/) project. They are providing IPv6-only VPS with NATed IPv4 for only 3€/year.
 
