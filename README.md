@@ -19,6 +19,3 @@ There are reliable providers where you can get a little VPS for even less than o
 - [HTTP Zoom (Berkshire, UK)](http://httpzoom.com/)
 
 If you don't care about sharing an IP address with more people, you should check out the awesome [LowEndSpirit](http://lowendspirit.com/) project. They are providing IPv6-only VPS with NATed IPv4 for only 3€/year.
-
-###License
-[Attribution-NonCommercial-ShareAlike 3.0 Unported](https://creativecommons.org/licenses/by-nc-sa/3.0/)
