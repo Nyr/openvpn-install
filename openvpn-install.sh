@@ -129,11 +129,11 @@ else
 	cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
 	# easy-rsa isn't available by default for Debian Jessie and newer
 	if [ ! -d /etc/openvpn/easy-rsa/2.0/ ]; then
-		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/master.tar.gz
+		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
 		tar xzf ~/easy-rsa.tar.gz -C ~/
 		mkdir -p /etc/openvpn/easy-rsa/2.0/
-		cp ~/easy-rsa-master/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
-		rm -rf ~/easy-rsa-master
+		cp ~/easy-rsa-2.2.2/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
+		rm -rf ~/easy-rsa-2.2.2
 		rm -rf ~/easy-rsa.tar.gz
 	fi
 	cd /etc/openvpn/easy-rsa/2.0/
