@@ -13,8 +13,8 @@ fi
 
 
 if [ ! -e /dev/net/tun ]; then
-    echo "TUN/TAP is not available"
-    exit
+	echo "TUN/TAP is not available, please enable it first (contact your provider if you don't know how)"
+	exit
 fi
 
 
@@ -23,7 +23,7 @@ fi
 # and to avoid getting an IPv6.
 IP=$(ifconfig | grep 'inet addr:' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d: -f2 | awk '{ print $1}' | head -1)
 if [ "$IP" = "" ]; then
-        IP=$(wget -qO- ipv4.icanhazip.com)
+	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
 
@@ -217,6 +217,6 @@ else
 	echo ""
 	echo "Finished!"
 	echo ""
-	echo "Your client config is available at ~/ovpn-$CLIENT.tar.gz"
+	echo "Your client config is available at `pwd`/ovpn-$CLIENT.tar.gz"
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
