@@ -177,7 +177,7 @@ else
 	# Set the server configuration
 	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
 	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
-	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 129.250.35.250"|' server.conf
+	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 8.8.8.8"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 74.82.42.42"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
 	# Listen at port 53 too if user wants that
@@ -213,14 +213,16 @@ else
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
-	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT
+	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
+	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
 	cd ~/ovpn-$CLIENT
-	sed -i "s|cert client.crt|cert $CLIENT.crt|" $CLIENT.conf
-	sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
-	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
+	sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
+	sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
+	sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
+	cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
+	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
 	cd ~/
 	rm -rf ovpn-$CLIENT
 	echo ""
