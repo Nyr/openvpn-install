@@ -39,7 +39,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 		echo "3) Remove OpenVPN"
 		echo "4) Exit"
 		echo ""
-		read -p "Select an option [1-4]:" option
+		read -p "Select an option [1-4]: " option
 		case $option in
 			1) 
 			echo ""
@@ -54,14 +54,16 @@ if [ -e /etc/openvpn/server.conf ]; then
 			"$EASY_RSA/pkitool" $CLIENT
 			# Let's generate the client config
 			mkdir ~/ovpn-$CLIENT
-			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
-			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT
+			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
+			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
+			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
+			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
 			cd ~/ovpn-$CLIENT
-			sed -i "s|cert client.crt|cert $CLIENT.crt|" $CLIENT.conf
-			sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
-			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
+			sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
+			sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
+			# this is the conf file for client's openvpn gui tool
+			cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
+			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
 			cd ~/
 			rm -rf ovpn-$CLIENT
 			echo ""
@@ -116,7 +118,7 @@ else
 	echo ""
 	echo "Do you want OpenVPN to be available at port 53 too?"
 	echo "This can be useful to connect under restrictive networks"
-	read -p "Listen at port 53 [y/n]:" -e -i n ALTPORT
+	read -p "Listen at port 53 [y/n]: " -e -i n ALTPORT
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
