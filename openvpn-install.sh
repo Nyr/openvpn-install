@@ -64,7 +64,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
 			sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
 			sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
-			# add an .ovpn file which is essentially the .conf file for client's openvpn gui tool
+			# add an .ovpn file which is essentially the .conf file for client-side openvpn GUI tool on Windows
 			cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
 			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
 			cd ~/
