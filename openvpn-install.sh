@@ -1,17 +1,18 @@
 #!/bin/bash
 # OpenVPN road warrior installer for Debian-based distros
 
-# This script will only work on Debian-based systems. It isn't bulletproof but
-# it will probably work if you simply want to setup a VPN on your Debian/Ubuntu
-# VPS. It has been designed to be as unobtrusive and universal as possible.
+
+# TODO check for Debian-based distros
 
 
+# Check for root
 if [ $USER != 'root' ]; then
 	echo "Sorry, you need to run this as root"
 	exit 1
 fi
 
 
+# check for tun/tap
 if [ ! -e /dev/net/tun ]; then
 	echo "TUN/TAP is not available, please enable it first (contact your provider if you don't know how)"
 	exit 1
@@ -45,7 +46,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			echo ""
 			echo "Tell me a name for the client cert"
 			echo "Please, use one word only, no special characters"
-			read -p "Client name: " -e -i client CLIENT
+			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/2.0/
 			source ./vars
 			# build-key for the client
@@ -54,26 +55,28 @@ if [ -e /etc/openvpn/server.conf ]; then
 			"$EASY_RSA/pkitool" $CLIENT
 			# Let's generate the client config
 			mkdir ~/ovpn-$CLIENT
+			# add server IP to the file names to prevent duplication on client configs
 			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
 			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
 			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
 			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
 			cd ~/ovpn-$CLIENT
+			sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
 			sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
 			sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
-			# this is the conf file for client's openvpn gui tool
+			# add an .ovpn file which is essentially the .conf file for client-side openvpn GUI tool on Windows
 			cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
 			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
 			cd ~/
 			rm -rf ovpn-$CLIENT
 			echo ""
-			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
+			echo "Client $CLIENT added, certs available at `pwd`/ovpn-$CLIENT.tar.gz"
 			exit 0
 			;;
 			2)
 			echo ""
 			echo "Tell me the existing client name"
-			read -p "Client name: " -e -i client CLIENT
+			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/2.0/
 			. /etc/openvpn/easy-rsa/2.0/vars
 			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
@@ -93,7 +96,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			apt-get remove --purge -y openvpn openvpn-blacklist
 			rm -rf /etc/openvpn
 			rm -rf /usr/share/doc/openvpn
-			sed -i '/--dport 53 -j REDIRECT --to-port 1194/d' /etc/rc.local
+			sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
 			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 			echo ""
 			echo "OpenVPN removed!"
@@ -104,6 +107,10 @@ if [ -e /etc/openvpn/server.conf ]; then
 	done
 else
 	echo 'Welcome to this quick OpenVPN "road warrior" installer'
+	echo ""
+	echo "This script will only work on Debian-based systems. It isn't bulletproof but"
+	echo "it will probably work if you simply want to setup a VPN on your Debian/Ubuntu"
+	echo "VPS. It has been designed to be as unobtrusive and universal as possible."
 	echo ""
 	# OpenVPN setup and first user creation
 	echo "I need to ask you a few questions before starting the setup"
@@ -126,7 +133,7 @@ else
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
-	read -p "Client name: " -e -i client CLIENT
+	read -p "Client name: " -e CLIENT
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
@@ -174,13 +181,13 @@ else
 	# Set the server configuration
 	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
 	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
-	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 129.250.35.250"|' server.conf
+	sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 8.8.8.8"|' server.conf
 	sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 74.82.42.42"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
 	# Listen at port 53 too if user wants that
 	if [ $ALTPORT = 'y' ]; then
-		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194
-		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194" /etc/rc.local
+		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT
+		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" /etc/rc.local
 	fi
 	# Allow duplicate certificate/key files if user wants that
 	if [ $DUPLICATE_CN = 'y' ]; then
@@ -214,14 +221,16 @@ else
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
-	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT
+	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
+	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
 	cd ~/ovpn-$CLIENT
-	sed -i "s|cert client.crt|cert $CLIENT.crt|" $CLIENT.conf
-	sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
-	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
+	sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
+	sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
+	sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
+	cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
+	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
 	cd ~/
 	rm -rf ovpn-$CLIENT
 	echo ""
