@@ -8,13 +8,13 @@
 
 if [ $USER != 'root' ]; then
 	echo "Sorry, you need to run this as root"
-	exit
+	exit 1
 fi
 
 
 if [ ! -e /dev/net/tun ]; then
 	echo "TUN/TAP is not available, please enable it first (contact your provider if you don't know how)"
-	exit
+	exit 1
 fi
 
 
@@ -41,7 +41,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 		echo ""
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo ""
 			echo "Tell me a name for the client cert"
 			echo "Please, use one word only, no special characters"
@@ -68,7 +68,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			rm -rf ovpn-$CLIENT
 			echo ""
 			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
-			exit
+			exit 0
 			;;
 			2)
 			echo ""
@@ -87,9 +87,9 @@ if [ -e /etc/openvpn/server.conf ]; then
 				echo ""
 				echo "Certificate for client $CLIENT revoked"
 			fi
-			exit
+			exit 0
 			;;
-			3) 
+			3)
 			apt-get remove --purge -y openvpn openvpn-blacklist
 			rm -rf /etc/openvpn
 			rm -rf /usr/share/doc/openvpn
@@ -97,9 +97,9 @@ if [ -e /etc/openvpn/server.conf ]; then
 			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 			echo ""
 			echo "OpenVPN removed!"
-			exit
+			exit 0
 			;;
-			4) exit;;
+			4) exit 0;;
 		esac
 	done
 else
@@ -119,6 +119,10 @@ else
 	echo "Do you want OpenVPN to be available at port 53 too?"
 	echo "This can be useful to connect under restrictive networks"
 	read -p "Listen at port 53 [y/n]: " -e -i n ALTPORT
+	echo ""
+	echo "Do you want to allow multiple clients to connect with the same"
+	echo "certificate/key files? This is recommended only for trusted clients."
+	read -p "Duplicate certificate [y/n]: " -e -i n DUPLICATE_CN
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
@@ -178,6 +182,10 @@ else
 		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194
 		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port 1194" /etc/rc.local
 	fi
+	# Allow duplicate certificate/key files if user wants that
+	if [ $DUPLICATE_CN = 'y' ]; then
+		sed -i 's|;duplicate-cn|duplicate-cn|' server.conf
+	fi
 	# Enable net.ipv4.ip_forward for the system
 	sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
 	# Avoid an unneeded reboot
@@ -221,4 +229,5 @@ else
 	echo ""
 	echo "Your client config is available at `pwd`/ovpn-$CLIENT.tar.gz"
 	echo "If you want to add more clients, you simply need to run this script another time!"
+	exit 0
 fi
