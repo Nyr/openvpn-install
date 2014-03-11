@@ -1,9 +1,11 @@
 #!/bin/bash
 # OpenVPN road warrior installer for Debian-based distros
 
-
-# TODO check for Debian-based distros
-
+# Check for Debian-based distro
+if [ ! -e /etc/debian_version ]; then
+	echo "Sorry, you need to be on a Debian-based OS to run this"
+	exit 1
+fi
 
 # Check for root
 if [ $USER != 'root' ]; then
@@ -11,13 +13,11 @@ if [ $USER != 'root' ]; then
 	exit 1
 fi
 
-
 # check for tun/tap
 if [ ! -e /dev/net/tun ]; then
 	echo "TUN/TAP is not available, please enable it first (contact your provider if you don't know how)"
 	exit 1
 fi
-
 
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
@@ -27,7 +27,10 @@ if [ "$IP" = "" ]; then
 	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
+# Get the machine host name
+HOSTNAME=$(hostname)
 
+# If OpenVPN is already installed
 if [ -e /etc/openvpn/server.conf ]; then
 	while :
 	do
@@ -45,30 +48,30 @@ if [ -e /etc/openvpn/server.conf ]; then
 			1)
 			echo ""
 			echo "Tell me a name for the client cert"
-			echo "Please, use one word only, no special characters"
-			read -p "Client name: " -e CLIENT
+			echo "Please, use words and spaces only, no special characters"
+			read -p "Client name: " -e -i $(id -un) CLIENT
 			cd /etc/openvpn/easy-rsa/2.0/
 			source ./vars
 			# build-key for the client
 			export KEY_CN="$CLIENT"
 			export EASY_RSA="${EASY_RSA:-.}"
-			"$EASY_RSA/pkitool" $CLIENT
+			"$EASY_RSA/pkitool" "$CLIENT"
 			# Let's generate the client config
-			mkdir ~/ovpn-$CLIENT
+			mkdir ~/ovpn-"$CLIENT"
 			# add server IP to the file names to prevent duplication on client configs
-			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
-			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
-			cd ~/ovpn-$CLIENT
-			sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
-			sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
-			sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
+			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.conf
+			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-"$CLIENT"/ca@$HOSTNAME.crt
+			cp /etc/openvpn/easy-rsa/2.0/keys/"$CLIENT".crt ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.crt
+			cp /etc/openvpn/easy-rsa/2.0/keys/"$CLIENT".key ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.key
+			cd ~/ovpn-"$CLIENT"
+			sed -i "s|ca ca.crt|ca ca@$HOSTNAME.crt|" "$CLIENT"@$HOSTNAME.conf
+			sed -i "s|cert client.crt|cert \"$CLIENT@$HOSTNAME.crt\"|" "$CLIENT"@$HOSTNAME.conf
+			sed -i "s|key client.key|key \"$CLIENT@$HOSTNAME.key\"|" "$CLIENT"@$HOSTNAME.conf
 			# add an .ovpn file which is essentially the .conf file for client-side openvpn GUI tool on Windows
-			cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
-			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
+			cp "$CLIENT"@$HOSTNAME.conf "$CLIENT"@$HOSTNAME.ovpn
+			tar -czf ../ovpn-"$CLIENT".tar.gz "$CLIENT"@$HOSTNAME.conf "$CLIENT"@$HOSTNAME.ovpn ca@$HOSTNAME.crt "$CLIENT"@$HOSTNAME.crt "$CLIENT"@$HOSTNAME.key
 			cd ~/
-			rm -rf ovpn-$CLIENT
+			rm -rf ovpn-"$CLIENT"
 			echo ""
 			echo "Client $CLIENT added, certs available at `pwd`/ovpn-$CLIENT.tar.gz"
 			exit 0
@@ -79,7 +82,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/2.0/
 			. /etc/openvpn/easy-rsa/2.0/vars
-			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
+			. /etc/openvpn/easy-rsa/2.0/revoke-full "$CLIENT"
 			# If it's the first time revoking a cert, we need to add the crl-verify line
 			if grep -q "crl-verify" "/etc/openvpn/server.conf"; then
 				echo ""
@@ -129,11 +132,11 @@ else
 	echo ""
 	echo "Do you want to allow multiple clients to connect with the same"
 	echo "certificate/key files? This is recommended only for trusted clients."
-	read -p "Duplicate certificate [y/n]: " -e -i n DUPLICATE_CN
+	read -p "Duplicate certificate [y/n]: " -e -i n DUPLICATECN
 	echo ""
 	echo "Finally, tell me your name for the client cert"
-	echo "Please, use one word only, no special characters"
-	read -p "Client name: " -e CLIENT
+	echo "Please, use words and spaces only, no special characters"
+	read -p "Client name: " -e -i $(id -un) CLIENT
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
@@ -168,7 +171,7 @@ else
 	# Now the client keys. We need to set KEY_CN or the stupid pkitool will cry
 	export KEY_CN="$CLIENT"
 	export EASY_RSA="${EASY_RSA:-.}"
-	"$EASY_RSA/pkitool" $CLIENT
+	"$EASY_RSA/pkitool" "$CLIENT"
 	# DH params
 	. /etc/openvpn/easy-rsa/2.0/build-dh
 	# Let's configure the server
@@ -190,7 +193,7 @@ else
 		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" /etc/rc.local
 	fi
 	# Allow duplicate certificate/key files if user wants that
-	if [ $DUPLICATE_CN = 'y' ]; then
+	if [ $DUPLICATECN = 'y' ]; then
 		sed -i 's|;duplicate-cn|duplicate-cn|' server.conf
 	fi
 	# Enable net.ipv4.ip_forward for the system
@@ -203,7 +206,7 @@ else
 	# And finally, restart OpenVPN
 	/etc/init.d/openvpn restart
 	# Let's generate the client config
-	mkdir ~/ovpn-$CLIENT
+	mkdir ~/ovpn-"$CLIENT"
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
 	# users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
@@ -221,18 +224,18 @@ else
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT@$IP.conf
-	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT/ca@$IP.crt
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT/$CLIENT@$IP.crt
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT/$CLIENT@$IP.key
-	cd ~/ovpn-$CLIENT
-	sed -i "s|ca ca.crt|ca ca@$IP.crt|" $CLIENT@$IP.conf
-	sed -i "s|cert client.crt|cert $CLIENT@$IP.crt|" $CLIENT@$IP.conf
-	sed -i "s|key client.key|key $CLIENT@$IP.key|" $CLIENT@$IP.conf
-	cp $CLIENT@$IP.conf $CLIENT@$IP.ovpn
-	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT@$IP.conf $CLIENT@$IP.ovpn ca@$IP.crt $CLIENT@$IP.crt $CLIENT@$IP.key
+	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.conf
+	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-"$CLIENT"/ca@$HOSTNAME.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/"$CLIENT".crt ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.crt
+	cp /etc/openvpn/easy-rsa/2.0/keys/"$CLIENT".key ~/ovpn-"$CLIENT"/"$CLIENT"@$HOSTNAME.key
+	cd ~/ovpn-"$CLIENT"
+	sed -i "s|ca ca.crt|ca ca@$HOSTNAME.crt|" "$CLIENT"@$HOSTNAME.conf
+	sed -i "s|cert client.crt|cert \"$CLIENT@$HOSTNAME.crt\"|" "$CLIENT"@$HOSTNAME.conf
+	sed -i "s|key client.key|key \"$CLIENT@$HOSTNAME.key\"|" "$CLIENT"@$HOSTNAME.conf
+	cp "$CLIENT"@$HOSTNAME.conf "$CLIENT"@$HOSTNAME.ovpn
+	tar -czf ../ovpn-"$CLIENT".tar.gz "$CLIENT"@$HOSTNAME.conf "$CLIENT"@$HOSTNAME.ovpn ca@$HOSTNAME.crt "$CLIENT"@$HOSTNAME.crt "$CLIENT"@$HOSTNAME.key
 	cd ~/
-	rm -rf ovpn-$CLIENT
+	rm -rf ovpn-"$CLIENT"
 	echo ""
 	echo "Finished!"
 	echo ""
