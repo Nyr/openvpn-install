@@ -13,8 +13,14 @@ fi
 
 
 if [ ! -e /dev/net/tun ]; then
-    echo "TUN/TAP is not available"
-    exit
+	echo "TUN/TAP is not available"
+	exit
+fi
+
+
+if [ ! -e /etc/debian_version ]; then
+	echo "Looks like you aren't running this installer on a Debian-based system"
+	exit
 fi
 
 
@@ -23,7 +29,7 @@ fi
 # and to avoid getting an IPv6.
 IP=$(ifconfig | grep 'inet addr:' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d: -f2 | awk '{ print $1}' | head -1)
 if [ "$IP" = "" ]; then
-        IP=$(wget -qO- ipv4.icanhazip.com)
+		IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
 
@@ -39,7 +45,7 @@ if [ -e /etc/openvpn/server.conf ]; then
 		echo "3) Remove OpenVPN"
 		echo "4) Exit"
 		echo ""
-		read -p "Select an option [1-4]:" option
+		read -p "Select an option [1-4]: " option
 		case $option in
 			1) 
 			echo ""
@@ -116,7 +122,7 @@ else
 	echo ""
 	echo "Do you want OpenVPN to be available at port 53 too?"
 	echo "This can be useful to connect under restrictive networks"
-	read -p "Listen at port 53 [y/n]:" -e -i n ALTPORT
+	read -p "Listen at port 53 [y/n]: " -e -i n ALTPORT
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
