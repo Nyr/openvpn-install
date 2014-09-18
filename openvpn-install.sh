@@ -6,19 +6,19 @@
 # VPS. It has been designed to be as unobtrusive and universal as possible.
 
 
-if [ $USER != 'root' ]; then
+if [[ "$USER" != 'root' ]]; then
 	echo "Sorry, you need to run this as root"
 	exit
 fi
 
 
-if [ ! -e /dev/net/tun ]; then
+if [[ ! -e /dev/net/tun ]]; then
 	echo "TUN/TAP is not available"
 	exit
 fi
 
 
-if [ ! -e /etc/debian_version ]; then
+if [[ ! -e /etc/debian_version ]]; then
 	echo "Looks like you aren't running this installer on a Debian-based system"
 	exit
 fi
@@ -28,12 +28,12 @@ fi
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
 IP=$(ifconfig | grep 'inet addr:' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d: -f2 | awk '{ print $1}' | head -1)
-if [ "$IP" = "" ]; then
+if [[ "$IP" = "" ]]; then
 		IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
 
-if [ -e /etc/openvpn/server.conf ]; then
+if [[ -e /etc/openvpn/server.conf ]]; then
 	while :
 	do
 	clear
@@ -134,7 +134,7 @@ else
 	apt-get install openvpn iptables openssl -y
 	cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
 	# easy-rsa isn't available by default for Debian Jessie and newer
-	if [ ! -d /etc/openvpn/easy-rsa/2.0/ ]; then
+	if [[ ! -d /etc/openvpn/easy-rsa/2.0/ ]]; then
 		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
 		tar xzf ~/easy-rsa.tar.gz -C ~/
 		mkdir -p /etc/openvpn/easy-rsa/2.0/
@@ -180,7 +180,7 @@ else
 		sed -i "/;push \"dhcp-option DNS 208.67.220.220\"/a\push \"dhcp-option DNS $line\"" server.conf
 	done
 	# Listen at port 53 too if user wants that
-	if [ $ALTPORT = 'y' ]; then
+	if [[ "$ALTPORT" = 'y' ]]; then
 		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT
 		sed -i "/# By default this script does nothing./a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" /etc/rc.local
 	fi
@@ -198,14 +198,14 @@ else
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
 	# users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
-	if [ "$IP" != "$EXTERNALIP" ]; then
+	if [[ "$IP" != "$EXTERNALIP" ]]; then
 		echo ""
 		echo "Looks like your server is behind a NAT!"
 		echo ""
 		echo "If your server is NATed (LowEndSpirit), I need to know the external IP"
 		echo "If that's not the case, just ignore this and leave the next field blank"
 		read -p "External IP: " -e USEREXTERNALIP
-		if [ $USEREXTERNALIP != "" ]; then
+		if [[ "$USEREXTERNALIP" != "" ]]; then
 			IP=$USEREXTERNALIP
 		fi
 	fi
