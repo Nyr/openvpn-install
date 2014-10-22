@@ -23,6 +23,19 @@ if [[ ! -e /etc/debian_version ]]; then
 	exit
 fi
 
+newclient () {
+	# Generates the client config bundle
+	mkdir ~/ovpn-$1
+	cd ~/ovpn-$1
+	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ./$1.conf
+	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt /etc/openvpn/easy-rsa/2.0/keys/$1.crt /etc/openvpn/easy-rsa/2.0/keys/$1.key ./
+	sed -i "s|cert client.crt|cert $1.crt|" $1.conf
+	sed -i "s|key client.key|key $1.key|" $1.conf
+	tar -czf ../ovpn-$1.tar.gz $1.conf ca.crt $1.crt $1.key
+	cd ~/
+	rm -rf ovpn-$1
+}
+
 
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
@@ -58,18 +71,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			export KEY_CN="$CLIENT"
 			export EASY_RSA="${EASY_RSA:-.}"
 			"$EASY_RSA/pkitool" $CLIENT
-			# Let's generate the client config
-			mkdir ~/ovpn-$CLIENT
-			cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
-			cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
-			cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT
-			cd ~/ovpn-$CLIENT
-			sed -i "s|cert client.crt|cert $CLIENT.crt|" $CLIENT.conf
-			sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
-			tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
-			cd ~/
-			rm -rf ovpn-$CLIENT
+			# Generate the client config bundle
+			newclient "$CLIENT"
 			echo ""
 			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
 			exit
@@ -193,8 +196,6 @@ else
 	sed -i "/# By default this script does nothing./a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
 	# And finally, restart OpenVPN
 	/etc/init.d/openvpn restart
-	# Let's generate the client config
-	mkdir ~/ovpn-$CLIENT
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
 	# users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
@@ -212,16 +213,8 @@ else
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/ovpn-$CLIENT/$CLIENT.conf
-	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.crt ~/ovpn-$CLIENT
-	cp /etc/openvpn/easy-rsa/2.0/keys/$CLIENT.key ~/ovpn-$CLIENT
-	cd ~/ovpn-$CLIENT
-	sed -i "s|cert client.crt|cert $CLIENT.crt|" $CLIENT.conf
-	sed -i "s|key client.key|key $CLIENT.key|" $CLIENT.conf
-	tar -czf ../ovpn-$CLIENT.tar.gz $CLIENT.conf ca.crt $CLIENT.crt $CLIENT.key
-	cd ~/
-	rm -rf ovpn-$CLIENT
+	# Generate the client config bundle
+	newclient "$CLIENT"
 	echo ""
 	echo "Finished!"
 	echo ""
