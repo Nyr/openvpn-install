@@ -24,16 +24,20 @@ if [[ ! -e /etc/debian_version ]]; then
 fi
 
 newclient () {
-	# Generates the client config bundle
-	mkdir ~/ovpn-$1
-	cd ~/ovpn-$1
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ./$1.conf
-	cp /etc/openvpn/easy-rsa/2.0/keys/ca.crt /etc/openvpn/easy-rsa/2.0/keys/$1.crt /etc/openvpn/easy-rsa/2.0/keys/$1.key ./
-	sed -i "s|cert client.crt|cert $1.crt|" $1.conf
-	sed -i "s|key client.key|key $1.key|" $1.conf
-	tar -czf ../ovpn-$1.tar.gz $1.conf ca.crt $1.crt $1.key
-	cd ~/
-	rm -rf ovpn-$1
+	# Generates the client.ovpn
+	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/$1.ovpn
+	sed -i "/ca ca.crt/d" ~/$1.ovpn
+	sed -i "/cert client.crt/d" ~/$1.ovpn
+	sed -i "/key client.key/d" ~/$1.ovpn
+	echo "<ca>" >> ~/$1.ovpn
+	cat /etc/openvpn/easy-rsa/2.0/keys/ca.crt >> ~/$1.ovpn
+	echo "</ca>" >> ~/$1.ovpn
+	echo "<cert>" >> ~/$1.ovpn
+	cat /etc/openvpn/easy-rsa/2.0/keys/$1.crt >> ~/$1.ovpn
+	echo "</cert>" >> ~/$1.ovpn
+	echo "<key>" >> ~/$1.ovpn
+	cat /etc/openvpn/easy-rsa/2.0/keys/$1.key >> ~/$1.ovpn
+	echo "</key>" >> ~/$1.ovpn
 }
 
 
@@ -71,10 +75,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			export KEY_CN="$CLIENT"
 			export EASY_RSA="${EASY_RSA:-.}"
 			"$EASY_RSA/pkitool" $CLIENT
-			# Generate the client config bundle
+			# Generate the client.ovpn
 			newclient "$CLIENT"
 			echo ""
-			echo "Client $CLIENT added, certs available at ~/ovpn-$CLIENT.tar.gz"
+			echo "Client $CLIENT added, certs available at ~/$CLIENT.ovpn"
 			exit
 			;;
 			2)
@@ -213,11 +217,11 @@ else
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
 	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
-	# Generate the client config bundle
+	# Generate the client.ovpn
 	newclient "$CLIENT"
 	echo ""
 	echo "Finished!"
 	echo ""
-	echo "Your client config is available at ~/ovpn-$CLIENT.tar.gz"
+	echo "Your client config is available at ~/$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
