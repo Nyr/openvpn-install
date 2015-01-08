@@ -106,6 +106,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf /usr/share/doc/openvpn
 			sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
 			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
+			sed -i '/iptables -I FORWARD -s 10.8.0.0/d' /etc/rc.local
+			sed -i '/iptables -I FORWARD -m conntrack --ctstate RELATED,ESTABLISHED/d' /etc/rc.local
 			echo ""
 			echo "OpenVPN removed!"
 			exit
@@ -237,10 +239,16 @@ else
 	if [[ "$INTERNALNETWORK" = 'y' ]]; then
 		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
+		iptables -I FORWARD -s 10.8.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -m conntrack --ctstate NEW -j ACCEPT" /etc/rc.local
 	else
 		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
 		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
+		iptables -I FORWARD -s 10.8.0.0/24 ! -d 10.8.0.0/24 -m conntrack --ctstate NEW -j ACCEPT
+		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 ! -d 10.8.0.0/24 -m conntrack --ctstate NEW -j ACCEPT" /etc/rc.local
 	fi
+	iptables -I FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+	sed -i "1 a\iptables -I FORWARD -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT" /etc/rc.local
 	# And finally, restart OpenVPN
 	/etc/init.d/openvpn restart
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
