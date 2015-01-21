@@ -101,13 +101,17 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			exit
 			;;
 			3) 
-			apt-get remove --purge -y openvpn openvpn-blacklist
-			rm -rf /etc/openvpn
-			rm -rf /usr/share/doc/openvpn
-			sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
-			sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 			echo ""
-			echo "OpenVPN removed!"
+			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
+			if [[ "$REMOVE" = 'y' ]]; then
+				apt-get remove --purge -y openvpn openvpn-blacklist
+				rm -rf /etc/openvpn
+				rm -rf /usr/share/doc/openvpn
+				sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
+				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
+				echo ""
+				echo "OpenVPN removed!"
+			fi
 			exit
 			;;
 			4) exit;;
