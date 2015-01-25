@@ -111,6 +111,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
 				echo ""
 				echo "OpenVPN removed!"
+			else
+				echo ""
+				echo "Removal aborted!"
 			fi
 			exit
 			;;
