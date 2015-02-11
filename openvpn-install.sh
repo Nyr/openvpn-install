@@ -1,9 +1,11 @@
 #!/bin/bash
-# OpenVPN road warrior installer for Debian-based distros
+# OpenVPN road warrior installer for Debian, Ubuntu and CentOS
 
-# This script will only work on Debian-based systems. It isn't bulletproof but
-# it will probably work if you simply want to setup a VPN on your Debian/Ubuntu
-# VPS. It has been designed to be as unobtrusive and universal as possible.
+# This script will work on Debian, Ubuntu, CentOS and probably other distros
+# of the same families, although no support is offered for them. It isn't
+# bulletproof but it will probably work if you simply want to setup a VPN on
+# your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
+# universal as possible.
 
 
 if [[ "$USER" != 'root' ]]; then
@@ -18,14 +20,27 @@ if [[ ! -e /dev/net/tun ]]; then
 fi
 
 
-if [[ ! -e /etc/debian_version ]]; then
-	echo "Looks like you aren't running this installer on a Debian-based system"
+if grep -q "CentOS release 5" "/etc/redhat-release"; then
+	echo "CentOS 5 is too old and not supported"
+	exit
+fi
+
+if [[ -e /etc/debian_version ]]; then
+	OS=debian
+	RCLOCAL='/etc/rc.local'
+elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+	OS=centos
+	RCLOCAL='/etc/rc.d/rc.local'
+	# Needed for CentOS 7
+	chmod +x /etc/rc.d/rc.local
+else
+	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
 	exit
 fi
 
 newclient () {
 	# Generates the client.ovpn
-	cp /usr/share/doc/openvpn/examples/sample-config-files/client.conf ~/$1.ovpn
+	cp /usr/share/doc/openvpn*/*ample*/sample-config-files/client.conf ~/$1.ovpn
 	sed -i "/ca ca.crt/d" ~/$1.ovpn
 	sed -i "/cert client.crt/d" ~/$1.ovpn
 	sed -i "/key client.key/d" ~/$1.ovpn
@@ -40,11 +55,20 @@ newclient () {
 	echo "</key>" >> ~/$1.ovpn
 }
 
+geteasyrsa () {
+	wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
+	tar xzf ~/easy-rsa.tar.gz -C ~/
+	mkdir -p /etc/openvpn/easy-rsa/2.0/
+	cp ~/easy-rsa-2.2.2/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
+	rm -rf ~/easy-rsa-2.2.2
+	rm -rf ~/easy-rsa.tar.gz
+}
+
 
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
-IP=$(ifconfig | grep 'inet addr:' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | cut -d: -f2 | awk '{ print $1}' | head -1)
+IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 if [[ "$IP" = "" ]]; then
 		IP=$(wget -qO- ipv4.icanhazip.com)
 fi
@@ -89,26 +113,27 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			. /etc/openvpn/easy-rsa/2.0/vars
 			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
 			# If it's the first time revoking a cert, we need to add the crl-verify line
-			if grep -q "crl-verify" "/etc/openvpn/server.conf"; then
-				echo ""
-				echo "Certificate for client $CLIENT revoked"
-			else
+			if ! grep -q "crl-verify" "/etc/openvpn/server.conf"; then
 				echo "crl-verify /etc/openvpn/easy-rsa/2.0/keys/crl.pem" >> "/etc/openvpn/server.conf"
 				/etc/init.d/openvpn restart
-				echo ""
-				echo "Certificate for client $CLIENT revoked"
 			fi
+			echo ""
+			echo "Certificate for client $CLIENT revoked"
 			exit
 			;;
 			3) 
 			echo ""
 			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
 			if [[ "$REMOVE" = 'y' ]]; then
-				apt-get remove --purge -y openvpn openvpn-blacklist
+				if [[ "$OS" = 'debian' ]]; then
+					apt-get remove --purge -y openvpn openvpn-blacklist
+				else
+					yum remove openvpn -y
+				fi
 				rm -rf /etc/openvpn
-				rm -rf /usr/share/doc/openvpn
-				sed -i '/--dport 53 -j REDIRECT --to-port/d' /etc/rc.local
-				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' /etc/rc.local
+				rm -rf /usr/share/doc/openvpn*
+				sed -i '/--dport 53 -j REDIRECT --to-port/d' $RCLOCAL
+				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' $RCLOCAL
 				echo ""
 				echo "OpenVPN removed!"
 			else
@@ -158,17 +183,19 @@ else
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
-	apt-get update
-	apt-get install openvpn iptables openssl -y
-	cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
-	# easy-rsa isn't available by default for Debian Jessie and newer
-	if [[ ! -d /etc/openvpn/easy-rsa/2.0/ ]]; then
-		wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
-		tar xzf ~/easy-rsa.tar.gz -C ~/
-		mkdir -p /etc/openvpn/easy-rsa/2.0/
-		cp ~/easy-rsa-2.2.2/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
-		rm -rf ~/easy-rsa-2.2.2
-		rm -rf ~/easy-rsa.tar.gz
+	if [[ "$OS" = 'debian' ]]; then
+		apt-get update
+		apt-get install openvpn iptables openssl -y
+		cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
+		# easy-rsa isn't available by default for Debian Jessie and newer
+		if [[ ! -d /etc/openvpn/easy-rsa/2.0/ ]]; then
+			geteasyrsa
+		fi
+	else
+		# Else, the distro is CentOS
+		yum install epel-release -y
+		yum install openvpn iptables openssl wget -y
+		geteasyrsa
 	fi
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
@@ -193,8 +220,10 @@ else
 	# DH params
 	. /etc/openvpn/easy-rsa/2.0/build-dh
 	# Let's configure the server
-	cd /usr/share/doc/openvpn/examples/sample-config-files
-	gunzip -d server.conf.gz
+	cd /usr/share/doc/openvpn*/*ample*/sample-config-files
+	if [[ "$OS" = 'debian' ]]; then
+		gunzip -d server.conf.gz
+	fi
 	cp server.conf /etc/openvpn/
 	cd /etc/openvpn/easy-rsa/2.0/keys
 	cp ca.crt ca.key dh2048.pem server.crt server.key /etc/openvpn
@@ -234,22 +263,42 @@ else
 	# Listen at port 53 too if user wants that
 	if [[ "$ALTPORT" = 'y' ]]; then
 		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT
-		sed -i "1 a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" /etc/rc.local
+		sed -i "1 a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" $RCLOCAL
 	fi
 	# Enable net.ipv4.ip_forward for the system
-	sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
+	if [[ "$OS" = 'debian' ]]; then
+		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
+	else
+		# CentOS 5 and 6
+		sed -i 's|net.ipv4.ip_forward = 0|net.ipv4.ip_forward = 1|' /etc/sysctl.conf
+		# CentOS 7
+		if ! grep -q "net.ipv4.ip_forward=1" "/etc/sysctl.conf"; then
+			echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
+		fi
+	fi
 	# Avoid an unneeded reboot
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	# Set iptables
 	if [[ "$INTERNALNETWORK" = 'y' ]]; then
 		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
-		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
+		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
 	else
 		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
-		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" /etc/rc.local
+		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
 	fi
 	# And finally, restart OpenVPN
-	/etc/init.d/openvpn restart
+	if [[ "$OS" = 'debian' ]]; then
+		/etc/init.d/openvpn restart
+	else
+		# Little hack to check for systemd
+		if pidof systemd; then
+			systemctl restart openvpn@server.service
+			systemctl enable openvpn@server.service
+		else
+			service openvpn restart
+			chkconfig openvpn on
+		fi
+	fi
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit
 	# users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
@@ -266,7 +315,7 @@ else
 	fi
 	# IP/port set on the default client.conf so we can add further users
 	# without asking for them
-	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn/examples/sample-config-files/client.conf
+	sed -i "s|remote my-server-1 1194|remote $IP $PORT|" /usr/share/doc/openvpn*/*ample*/sample-config-files/client.conf
 	# Generate the client.ovpn
 	newclient "$CLIENT"
 	echo ""
