@@ -132,7 +132,6 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
-				sed -i '/--dport 53 -j REDIRECT --to-port/d' $RCLOCAL
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0/d' $RCLOCAL
 				echo ""
 				echo "OpenVPN removed!"
@@ -262,8 +261,7 @@ else
 	esac
 	# Listen at port 53 too if user wants that
 	if [[ "$ALTPORT" = 'y' ]]; then
-		iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT
-		sed -i "1 a\iptables -t nat -A PREROUTING -p udp -d $IP --dport 53 -j REDIRECT --to-port $PORT" $RCLOCAL
+		sed -i '/port 1194/a port 53' server.conf
 	fi
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
