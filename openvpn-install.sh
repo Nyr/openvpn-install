@@ -115,7 +115,16 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			# If it's the first time revoking a cert, we need to add the crl-verify line
 			if ! grep -q "crl-verify" "/etc/openvpn/server.conf"; then
 				echo "crl-verify /etc/openvpn/easy-rsa/2.0/keys/crl.pem" >> "/etc/openvpn/server.conf"
-				/etc/init.d/openvpn restart
+				# And restart
+				if pgrep systemd-journal; then
+					systemctl restart openvpn@server.service
+				else
+					if [[ "$OS" = 'debian' ]]; then
+						/etc/init.d/openvpn restart
+					else
+						service openvpn restart
+					fi
+				fi
 			fi
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
@@ -288,10 +297,14 @@ else
 	fi
 	# And finally, restart OpenVPN
 	if [[ "$OS" = 'debian' ]]; then
-		/etc/init.d/openvpn restart
-	else
 		# Little hack to check for systemd
-		if pidof systemd; then
+		if pgrep systemd-journal; then
+			systemctl restart openvpn@server.service
+		else
+			/etc/init.d/openvpn restart
+		fi
+	else
+		if pgrep systemd-journal; then
 			systemctl restart openvpn@server.service
 			systemctl enable openvpn@server.service
 		else
