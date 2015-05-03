@@ -210,7 +210,8 @@ else
 	# Let's fix one thing first...
 	cp -u -p openssl-1.0.0.cnf openssl.cnf
 	# Fuck you NSA - 1024 bits was the default for Debian Wheezy and older
-	sed -i 's|export KEY_SIZE=1024|export KEY_SIZE=2048|' /etc/openvpn/easy-rsa/2.0/vars
+	sed -i 's|export KEY_SIZE=1024|export KEY_SIZE=4096|' /etc/openvpn/easy-rsa/2.0/vars
+	sed -i 's|export KEY_SIZE=2048|export KEY_SIZE=4096|' /etc/openvpn/easy-rsa/2.0/vars
 	# Create the PKI
 	. /etc/openvpn/easy-rsa/2.0/vars
 	. /etc/openvpn/easy-rsa/2.0/clean-all
@@ -235,10 +236,11 @@ else
 	fi
 	cp server.conf /etc/openvpn/
 	cd /etc/openvpn/easy-rsa/2.0/keys
-	cp ca.crt ca.key dh2048.pem server.crt server.key /etc/openvpn
+	cp ca.crt ca.key dh4096.pem server.crt server.key /etc/openvpn
 	cd /etc/openvpn/
 	# Set the server configuration
-	sed -i 's|dh dh1024.pem|dh dh2048.pem|' server.conf
+	sed -i 's|dh dh1024.pem|dh dh4096.pem|' server.conf
+	sed -i 's|dh dh2048.pem|dh dh4096.pem|' server.conf
 	sed -i 's|;push "redirect-gateway def1 bypass-dhcp"|push "redirect-gateway def1 bypass-dhcp"|' server.conf
 	sed -i "s|port 1194|port $PORT|" server.conf
 	# DNS
