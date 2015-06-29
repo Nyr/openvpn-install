@@ -20,7 +20,7 @@ if [[ ! -e /dev/net/tun ]]; then
 fi
 
 
-if grep -q "CentOS release 5" "/etc/redhat-release"; then
+if grep -qs "CentOS release 5" "/etc/redhat-release"; then
 	echo "CentOS 5 is too old and not supported"
 	exit
 fi
