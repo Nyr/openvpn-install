@@ -55,15 +55,6 @@ newclient () {
 	echo "</key>" >> ~/$1.ovpn
 }
 
-geteasyrsa () {
-	wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
-	tar xzf ~/easy-rsa.tar.gz -C ~/
-	mkdir -p /etc/openvpn/easy-rsa/2.0/
-	cp ~/easy-rsa-2.2.2/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
-	rm -rf ~/easy-rsa-2.2.2
-	rm -rf ~/easy-rsa.tar.gz
-}
-
 
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
@@ -79,13 +70,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 	do
 	clear
 		echo "Looks like OpenVPN is already installed"
+		echo ""
 		echo "What do you want to do?"
-		echo ""
-		echo "1) Add a cert for a new user"
-		echo "2) Revoke existing user cert"
-		echo "3) Remove OpenVPN"
-		echo "4) Exit"
-		echo ""
+		echo "   1) Add a cert for a new user"
+		echo "   2) Revoke existing user cert"
+		echo "   3) Remove OpenVPN"
+		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
 			1) 
@@ -106,9 +96,23 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			exit
 			;;
 			2)
+			# This option could be documented a bit better and maybe even be simplimplified
+			# ...but what can I say, I want some sleep too
+			NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/2.0/keys/index.txt | grep "^V" | wc -l)
+			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
+				echo ""
+				echo "You have no existing clients!"
+				exit
+			fi
 			echo ""
-			echo "Tell me the existing client name"
-			read -p "Client name: " -e -i client CLIENT
+			echo "Select the existing client certificate you want to revoke"
+			tail -n +2 /etc/openvpn/easy-rsa/2.0/keys/index.txt | grep "^V" | cut -d '/' -f 7 | cut -d '=' -f 2 | nl -s ') '
+			if [[ "$NUMBEROFCLIENTS" = '1' ]]; then
+				read -p "Select one client [1]: " CLIENTNUMBER
+			else
+				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
+			fi
+			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/2.0/keys/index.txt | grep "^V" | cut -d '/' -f 7 | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 			cd /etc/openvpn/easy-rsa/2.0/
 			. /etc/openvpn/easy-rsa/2.0/vars
 			. /etc/openvpn/easy-rsa/2.0/revoke-full $CLIENT
@@ -192,25 +196,28 @@ else
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
-	if [[ "$OS" = 'debian' ]]; then
+		if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl -y
-		cp -R /usr/share/doc/openvpn/examples/easy-rsa/ /etc/openvpn
-		# easy-rsa isn't available by default for Debian Jessie and newer
-		if [[ ! -d /etc/openvpn/easy-rsa/2.0/ ]]; then
-			geteasyrsa
-		fi
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
 		yum install openvpn iptables openssl wget -y
-		geteasyrsa
 	fi
+	# An old version of easy-rsa was available by default in some openvpn packages
+	if [[ -d /etc/openvpn/easy-rsa/2.0/ ]]; then
+		rm -f /etc/openvpn/easy-rsa/2.0/
+	fi
+	# Get easy-rsa
+	wget --no-check-certificate -O ~/easy-rsa.tar.gz https://github.com/OpenVPN/easy-rsa/archive/2.2.2.tar.gz
+	tar xzf ~/easy-rsa.tar.gz -C ~/
+	mkdir -p /etc/openvpn/easy-rsa/2.0/
+	cp ~/easy-rsa-2.2.2/easy-rsa/2.0/* /etc/openvpn/easy-rsa/2.0/
+	rm -rf ~/easy-rsa-2.2.2
+	rm -rf ~/easy-rsa.tar.gz
 	cd /etc/openvpn/easy-rsa/2.0/
 	# Let's fix one thing first...
 	cp -u -p openssl-1.0.0.cnf openssl.cnf
-	# Fuck you NSA - 1024 bits was the default for Debian Wheezy and older
-	sed -i 's|export KEY_SIZE=1024|export KEY_SIZE=2048|' /etc/openvpn/easy-rsa/2.0/vars
 	# Create the PKI
 	. /etc/openvpn/easy-rsa/2.0/vars
 	. /etc/openvpn/easy-rsa/2.0/clean-all
