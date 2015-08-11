@@ -9,7 +9,8 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ###Installation
 Run the script and follow the assistant:
 
-`wget git.io/v346F --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh` (my version)
+`wget git.io/v346F --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh` (my version) 
+
 `wget git.io/vpn --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh` (original)
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
