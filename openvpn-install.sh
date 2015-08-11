@@ -1,6 +1,6 @@
 #!/bin/bash
 # OpenVPN road warrior installer for Debian, Ubuntu and CentOS
-
+# TCP/UDP selector: done :)
 # This script will work on Debian, Ubuntu, CentOS and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
@@ -190,6 +190,11 @@ else
 	echo "   6) Google"
 	read -p "DNS [1-6]: " -e -i 1 DNS
 	echo ""
+    echo "TCP/UDP selector:"
+	echo "   1) TCP"
+	echo "   2) UDP"
+	read -p "SELECTOR [1-2]: " -e -i 1 SELECTOR
+	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
 	read -p "Client name: " -e -i client CLIENT
@@ -274,6 +279,16 @@ else
 		6) 
 		sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 8.8.8.8"|' server.conf
 		sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 8.8.4.4"|' server.conf
+		;;
+	esac
+	# SELECTOR
+	case $SELECTOR in
+		1) 
+		sed -i 's|proto udp|proto tcp|' server.conf
+		sed -i 's|proto udp|proto tcp|' /usr/share/doc/openvpn*/*ample*/sample-config-files/client.conf
+		;;
+		2)
+		# nothing do
 		;;
 	esac
 	# Listen at port 53 too if user wants that
