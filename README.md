@@ -1,3 +1,6 @@
+###Intro
+This is fork of [Nyr](https://github.com/Nyr/openvpn-install) with added TCP/UDP selector.
+
 ##openvpn-install
 OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian, Ubuntu and CentOS.
 
@@ -6,7 +9,9 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ###Installation
 Run the script and follow the assistant:
 
-`wget git.io/vpn --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh`
+`wget git.io/v346F --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh` (my version) 
+
+`wget git.io/vpn --no-check-certificate -O openvpn-install.sh; bash openvpn-install.sh` (original)
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
