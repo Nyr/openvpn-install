@@ -251,7 +251,7 @@ else
 	# DNS
 	case $DNS in
 		1) 
-		# Obtain the resolvers from resolv.conf and use them for OpenVPN
+		# Obtain the resolvers from resolv.conf and use them for OpenVPN 
 		grep -v '#' /etc/resolv.conf | grep 'nameserver' | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | while read line; do
 			sed -i "/;push \"dhcp-option DNS 208.67.220.220\"/a\push \"dhcp-option DNS $line\"" server.conf
 		done
@@ -274,6 +274,10 @@ else
 		6) 
 		sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 8.8.8.8"|' server.conf
 		sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 8.8.4.4"|' server.conf
+		;;
+		7) 
+		sed -i 's|;push "dhcp-option DNS 208.67.222.222"|push "dhcp-option DNS 8.26.56.26"|' server.conf
+		sed -i 's|;push "dhcp-option DNS 208.67.220.220"|push "dhcp-option DNS 8.20.247.20"|' server.conf
 		;;
 	esac
 	# Listen at port 53 too if user wants that
