@@ -34,7 +34,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
 else
-	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
+	echo "Looks like you aren't running this installer on a Debian/Ubuntu or CentOS/Redhat system"
 	exit
 fi
 
