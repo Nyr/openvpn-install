@@ -290,7 +290,7 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		firewall-cmd --permanent --zone=public --add-port=$PORT/udp
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
 	fi
-	if iptables -L | grep -q REJECT; then
+	if iptables -L | grep -q 'REJECT|DROP'; then
 		# If iptables has at least one REJECT rule, we asume this is needed.
 		# Not the best approach but I can't think of other and this shouldn't
 		# cause problems.
