@@ -10,19 +10,19 @@
 
 if [[ "$USER" != 'root' ]]; then
 	echo "Sorry, you need to run this as root"
-	exit
+	exit 1
 fi
 
 
 if [[ ! -e /dev/net/tun ]]; then
 	echo "TUN/TAP is not available"
-	exit
+	exit 2
 fi
 
 
 if grep -qs "CentOS release 5" "/etc/redhat-release"; then
 	echo "CentOS 5 is too old and not supported"
-	exit
+	exit 3
 fi
 
 if [[ -e /etc/debian_version ]]; then
@@ -35,7 +35,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	chmod +x /etc/rc.d/rc.local
 else
 	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
-	exit
+	exit 4
 fi
 
 newclient () {
@@ -95,7 +95,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
 				echo ""
 				echo "You have no existing clients!"
-				exit
+				exit 5
 			fi
 			echo ""
 			echo "Select the existing client certificate you want to revoke"
