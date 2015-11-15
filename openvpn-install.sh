@@ -222,6 +222,8 @@ else
 	echo "port $PORT
 proto udp
 dev tun
+sndbuf 0
+rcvbuf 0
 ca ca.crt
 cert server.crt
 key server.key
@@ -335,6 +337,8 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 	echo "client
 dev tun
 proto udp
+sndbuf 0
+rcvbuf 0
 remote $IP $PORT
 resolv-retry infinite
 nobind
