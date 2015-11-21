@@ -202,12 +202,12 @@ else
 		rm -rf /etc/openvpn/easy-rsa/
 	fi
 	# Get easy-rsa
-	wget --no-check-certificate -O ~/EasyRSA-3.0.0.tgz https://github.com/OpenVPN/easy-rsa/releases/download/3.0.0/EasyRSA-3.0.0.tgz
-	tar xzf ~/EasyRSA-3.0.0.tgz -C ~/
-	mv ~/EasyRSA-3.0.0/ /etc/openvpn/
-	mv /etc/openvpn/EasyRSA-3.0.0/ /etc/openvpn/easy-rsa/
+	wget --no-check-certificate -O ~/EasyRSA-3.0.1.tgz https://github.com/OpenVPN/easy-rsa/releases/download/3.0.1/EasyRSA-3.0.1.tgz
+	tar xzf ~/EasyRSA-3.0.1.tgz -C ~/
+	mv ~/EasyRSA-3.0.1/ /etc/openvpn/
+	mv /etc/openvpn/EasyRSA-3.0.1/ /etc/openvpn/easy-rsa/
 	chown -R root:root /etc/openvpn/easy-rsa/
-	rm -rf ~/EasyRSA-3.0.0.tgz
+	rm -rf ~/EasyRSA-3.0.1.tgz
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
