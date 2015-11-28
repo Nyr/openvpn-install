@@ -224,8 +224,6 @@ else
 	cp ta.key pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn
 	# Generate server.conf
 	echo "port $PORT
-user nobody
-group nobody
 proto udp
 dev tun
 sndbuf 0
