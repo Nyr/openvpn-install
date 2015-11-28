@@ -353,7 +353,8 @@ persist-key
 persist-tun
 remote-cert-tls server
 comp-lzo
-verb 3" > /etc/openvpn/client-common.txt
+verb 3
+key-direction 1" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
