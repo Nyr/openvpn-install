@@ -50,6 +50,9 @@ newclient () {
 	echo "<key>" >> ~/$1.ovpn
 	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
 	echo "</key>" >> ~/$1.ovpn
+	echo "<tls-auth>" >> ~/$1.ovpn
+	cat /etc/openvpn/easy-rsa/ta.key >> ~/$1.ovpn
+	echo "</tls-auth>"
 }
 
 
@@ -75,7 +78,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo ""
 			echo "Tell me a name for the client cert"
 			echo "Please, use one word only, no special characters"
@@ -123,7 +126,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Certificate for client $CLIENT revoked"
 			exit
 			;;
-			3) 
+			3)
 			echo ""
 			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
 			if [[ "$REMOVE" = 'y' ]]; then
@@ -216,8 +219,9 @@ else
 	./easyrsa build-server-full server nopass
 	./easyrsa build-client-full $CLIENT nopass
 	./easyrsa gen-crl
+	openvpn --genkey --secret ta.key
 	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn
+	cp ta.key pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn
 	# Generate server.conf
 	echo "port $PORT
 proto udp
@@ -230,11 +234,12 @@ key server.key
 dh dh.pem
 topology subnet
 server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+ifconfig-pool-persist ipp.txt
+tls-auth ta.key 0" > /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
-		1) 
+		1)
 		# Obtain the resolvers from resolv.conf and use them for OpenVPN
 		grep -v '#' /etc/resolv.conf | grep 'nameserver' | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | while read line; do
 			echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server.conf
@@ -244,18 +249,18 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
 		;;
-		3) 
+		3)
 		echo 'push "dhcp-option DNS 4.2.2.2"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 4.2.2.4"' >> /etc/openvpn/server.conf
 		;;
-		4) 
+		4)
 		echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 129.250.35.251"' >> /etc/openvpn/server.conf
 		;;
-		5) 
+		5)
 		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
 		;;
-		6) 
+		6)
 		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
 		;;
