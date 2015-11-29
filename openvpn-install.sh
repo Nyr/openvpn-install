@@ -209,6 +209,8 @@ else
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -rf ~/EasyRSA-3.0.1.tgz
 	cd /etc/openvpn/easy-rsa/
+	# Give the user time to set custom easy-rsa values
+	read -n1 -r -p "Please set easy-rsa values..."
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
