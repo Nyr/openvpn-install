@@ -1,11 +1,13 @@
 #!/bin/sh
 # OpenVPN road warrior installer for Debian, Ubuntu and CentOS
 
-# This script will work on Debian, Ubuntu, CentOS and probably other distros
-# of the same families, although no support is offered for them. It isn't
-# bulletproof but it will probably work if you simply want to setup a VPN on
-# your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
-# universal as possible.
+# This script is implemented as POSIX-compliant.
+# It should work on sh, dash, bash, ksh, zsh on Debian, Ubuntu, CentOS
+# and probably other distros of the same families,
+# although no support is offered for them. It isn't bulletproof but
+# it will probably work if you simply want to setup a VPN on
+# your Debian/Ubuntu/CentOS box. It has been designed to be
+# as unobtrusive and universal as possible.
 
 
 if [ "$(id -u)" != "0" ]
@@ -39,6 +41,16 @@ then
 else
 	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
 	exit 4
+fi
+
+# Detect the init system
+# Return the PID of systemd if running
+pidof /sbin/init && INITSYS=sysvinit
+# Return the PID of systemd if running
+pidof systemd && INITSYS=systemd
+if [ "$INITSYS" = "" ]
+  then echo "Your init system isn't supported"
+  exit 5
 fi
 
 newclient() {
@@ -113,11 +125,9 @@ then
 			./easyrsa --batch revoke $CLIENT
 			./easyrsa gen-crl
 			# And restart
-			if pgrep systemd-journal
+			if [ $INITSYS = systemd ]
         then systemctl restart openvpn@server.service
-			elif [ $OS = debian ]
-        then /etc/init.d/openvpn restart
-      else
+			else
         service openvpn restart
 			fi
 			echo ""
@@ -307,12 +317,10 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
 	fi
 	# And finally, restart OpenVPN
-	if pgrep systemd-journal
+	if [ $INITSYS = systemd ]
   then # Little hack to check for systemd
     systemctl restart openvpn@server.service
     systemctl enable openvpn@server.service
-  elif [ $OS = debian ]
-  	then /etc/init.d/openvpn restart
 	else
     service openvpn restart
     chkconfig openvpn on
