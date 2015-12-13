@@ -12,19 +12,20 @@
 
 if [ "$(id -u)" != "0" ]
 then
-   echo "Sorry, you need to run this as root"
-   exit 1
+	echo "Sorry, you need to run this as root"
+	exit 1
 fi
 
 if [ ! -e /dev/net/tun ]
 then
-  echo "TUN/TAP is not available"
+	echo "TUN/TAP is not available"
 	exit 2
 fi
 
 
 if grep -qs "CentOS release 5" "/etc/redhat-release"
-then echo "CentOS 5 is too old and not supported"
+then
+	echo "CentOS 5 is too old and not supported"
 	exit 3
 fi
 
@@ -49,8 +50,9 @@ pidof /sbin/init && INITSYS=sysvinit
 # Return the PID of systemd if running
 pidof systemd && INITSYS=systemd
 if [ "$INITSYS" = "" ]
-  then echo "Your init system isn't supported"
-  exit 5
+then
+	echo "Your init system isn't supported"
+	exit 5
 fi
 
 newclient() {
@@ -72,7 +74,7 @@ newclient() {
 # and to avoid getting an IPv6.
 IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 if [ "$IP" = "" ]
-  then IP=$(wget -qO- ipv4.icanhazip.com)
+	then IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
 if [ -e /etc/openvpn/server.conf ]
@@ -93,8 +95,8 @@ then
 			echo ""
 			echo "Tell me a name for the client cert"
 			echo "Please, use one word only, no special characters"
-      read -p "Client name: client " CLIENT
-      CLIENT=${CLIENT:-client}
+			read -p "Client name: client " CLIENT
+			CLIENT=${CLIENT:-client}
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa build-client-full $CLIENT nopass
 			# Generates the custom client.ovpn
@@ -107,7 +109,7 @@ then
 			# ...but what can I say, I want some sleep too
 			NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
 			if [ "$NUMBEROFCLIENTS" = 0 ]
-      then
+			then
 				echo ""
 				echo "You have no existing clients!"
 				exit 5
@@ -116,7 +118,7 @@ then
 			echo "Select the existing client certificate you want to revoke"
 			tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
 			if [ "$NUMBEROFCLIENTS" = 1 ]
-        then read -p "Select one client [1]: " CLIENTNUMBER
+				then read -p "Select one client [1]: " CLIENTNUMBER
 			else
 				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
 			fi
@@ -126,18 +128,18 @@ then
 			./easyrsa gen-crl
 			# And restart
 			if [ $INITSYS = systemd ]
-        then systemctl restart openvpn@server.service
+				then systemctl restart openvpn@server.service
 			else
-        service openvpn restart
+				service openvpn restart
 			fi
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
 			exit;;
 			3)
 			echo ""
-      read -p "Do you really want to remove OpenVPN? [N/y]: " REMOVE
+			read -p "Do you really want to remove OpenVPN? [N/y]: " REMOVE
 			if [ $REMOVE = y ]
-        then PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
+				then PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
 				if pgrep firewalld
 				then # Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --zone=public --remove-port=$PORT/udp
@@ -153,7 +155,7 @@ then
 				fi
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
 				if [ $OS = debian ]
-          then apt-get remove --purge -y openvpn openvpn-blacklist
+					then apt-get remove --purge -y openvpn openvpn-blacklist
 				else
 					yum remove openvpn -y
 				fi
@@ -179,12 +181,12 @@ else
 	echo ""
 	echo "First I need to know the IPv4 address of the network interface you want OpenVPN"
 	echo "listening to."
-  read -p "IP address: $IP " IP
-  IP=${IP:-$IP}
+	read -p "IP address: $IP " IP
+	IP=${IP:-$IP}
 	echo ""
 	echo "What port do you want for OpenVPN?"
 	read -p "Port: 1194 " PORT
-  PORT=${PORT:-1194}
+	PORT=${PORT:-1194}
 	echo ""
 	echo "What DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
@@ -194,18 +196,18 @@ else
 	echo "   5) Hurricane Electric"
 	echo "   6) Google"
 	read -p "DNS [1-6]: 1 " DNS
-  DNS=${DNS:-1}
+	DNS=${DNS:-1}
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
-  read -p "Client name: client " CLIENT
-  CLIENT=${CLIENT:-client}
-  echo ""
+	read -p "Client name: client " CLIENT
+	CLIENT=${CLIENT:-client}
+	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
-	echo "Press [ENTER] to continue... \c"
-  read
-  if [ $OS = debian ]
-  then
+	echo "Press [ENTER] to continue... \c "
+	read
+	if [ $OS = debian ]
+	then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
 	else
@@ -215,7 +217,7 @@ else
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [ -d /etc/openvpn/easy-rsa/ ]
-    then rm -rf /etc/openvpn/easy-rsa/
+		then rm -rf /etc/openvpn/easy-rsa/
 	fi
 	# Get easy-rsa
 	wget -O ~/EasyRSA-3.0.1.tgz https://github.com/OpenVPN/easy-rsa/releases/download/3.0.1/EasyRSA-3.0.1.tgz
@@ -318,12 +320,12 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 	fi
 	# And finally, restart OpenVPN
 	if [ $INITSYS = systemd ]
-  then # Little hack to check for systemd
-    systemctl restart openvpn@server.service
-    systemctl enable openvpn@server.service
+	then
+		systemctl restart openvpn@server.service
+		systemctl enable openvpn@server.service
 	else
-    service openvpn restart
-    chkconfig openvpn on
+		service openvpn restart
+		chkconfig openvpn on
 	fi
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
@@ -336,7 +338,7 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		echo "If that's not the case, just ignore this and leave the next field blank"
 		read -p "External IP: " USEREXTERNALIP
 		if [ "$USEREXTERNALIP" != "" ]
-      then echo IP=$USEREXTERNALIP
+			then echo IP=$USEREXTERNALIP
 		fi
 	fi
 	# client-common.txt is created so we have a template to add further users later
