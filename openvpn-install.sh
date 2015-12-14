@@ -109,6 +109,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa --batch revoke $CLIENT
 			./easyrsa gen-crl
+			rm -rf pki/reqs/client.req
+			rm -rf pki/private/client.key
+			rm -rf pki/issued/client.crt
 			# And restart
 			if pgrep systemd-journal; then
 				systemctl restart openvpn@server.service
