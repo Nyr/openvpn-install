@@ -267,8 +267,6 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 comp-lzo
 persist-key
 persist-tun
-status openvpn-status.log
-verb 3
 crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
@@ -348,8 +346,7 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-comp-lzo
-verb 3" > /etc/openvpn/client-common.txt
+comp-lzo" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
