@@ -13,3 +13,9 @@ chmod +x openvpn-install.sh
 ```
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
+
+
+## Licence
+
+Thanks to [Nyr](https://github.com/Nyr/openvpn-install)
+[MIT Licence](https://raw.githubusercontent.com/Angristan/openvpn-install-nyr/master/LICENSE.txt)
