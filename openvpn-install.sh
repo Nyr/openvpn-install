@@ -1,10 +1,10 @@
 #!/bin/bash
-# OpenVPN road warrior installer for Debian, Ubuntu and CentOS
+# OpenVPN road warrior installer for Debian, Ubuntu, CentOS and Arch
 
-# This script will work on Debian, Ubuntu, CentOS and probably other distros
+# This script will work on Debian, Ubuntu, CentOS, Arch and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
-# your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
+# your Debian/Ubuntu/CentOS/Arch box. It has been designed to be as unobtrusive and
 # universal as possible.
 
 
@@ -33,8 +33,10 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	RCLOCAL='/etc/rc.d/rc.local'
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
+elif [[ -e /etc/arch-release ]]; then
+	OS=arch
 else
-	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
+	echo "Looks like you aren't running this installer on a Debian, Ubuntu, CentOS or Arch system"
 	exit 4
 fi
 
@@ -58,7 +60,7 @@ newclient () {
 # and to avoid getting an IPv6.
 IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 if [[ "$IP" = "" ]]; then
-		IP=$(wget -qO- ipv4.icanhazip.com)
+	IP=$(wget -qO- ipv4.icanhazip.com)
 fi
 
 
@@ -118,8 +120,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			else
 				if [[ "$OS" = 'debian' ]]; then
 					/etc/init.d/openvpn restart
-				else
+				elif [[ "$OS" = 'centos' ]]; then
 					service openvpn restart
+				elif [[ "$OS" = 'arch' ]]; then
+					systemctl restart openvpn@server.service
 				fi
 			fi
 			echo ""
@@ -146,8 +150,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
 				if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
-				else
+				elif [[ "$OS" = 'centos' ]]; then
 					yum remove openvpn -y
+				elif [[ "$OS" = 'arch' ]]; then
+					pacman -Ry openvpn
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
@@ -192,13 +198,16 @@ else
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
-		if [[ "$OS" = 'debian' ]]; then
+	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
-	else
+	elif [[ "$OS" = 'debian' ]]; then
 		# Else, the distro is CentOS
 		yum install epel-release -y
 		yum install openvpn iptables openssl wget ca-certificates -y
+	elif [[ "$OS" = 'arch' ]]; then
+		pacman -Syu
+		pacman -Sy openvpn iptables openssl wget ca-certificates
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
@@ -273,12 +282,17 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
-	else
+	elif [[ "$OS" = 'centos' ]]; then
 		# CentOS 5 and 6
 		sed -i 's|net.ipv4.ip_forward = 0|net.ipv4.ip_forward = 1|' /etc/sysctl.conf
 		# CentOS 7
 		if ! grep -q "net.ipv4.ip_forward=1" "/etc/sysctl.conf"; then
 			echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
+		fi
+	elif [[ "$OS" = 'arch' ]]; then
+		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.d/30-ipforward.conf
+		if ! grep -q "net.ipv4.ip_forward=1" "/etc/sysctl.d/30-ipforward.conf"; then
+			echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.d/30-ipforward.conf
 		fi
 	fi
 	# Avoid an unneeded reboot
@@ -302,9 +316,13 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		iptables -I INPUT -p udp --dport $PORT -j ACCEPT
 		iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
 		iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-		sed -i "1 a\iptables -I INPUT -p udp --dport $PORT -j ACCEPT" $RCLOCAL
-		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
-		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
+		if [["$OS" = 'debian'|| "$OS" = 'centos' ]]; then
+			sed -i "1 a\iptables -I INPUT -p udp --dport $PORT -j ACCEPT" $RCLOCAL
+			sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
+			sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
+		elif [[ "$OS" = 'arch' ]]; then
+			iptables-save > /etc/iptables/iptables.rules
+		fi
 	fi
 	# And finally, restart OpenVPN
 	if [[ "$OS" = 'debian' ]]; then
@@ -314,7 +332,7 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		else
 			/etc/init.d/openvpn restart
 		fi
-	else
+	elif [[ "$OS" = 'centos' ]]; then
 		if pgrep systemd-journal; then
 			systemctl restart openvpn@server.service
 			systemctl enable openvpn@server.service
@@ -322,6 +340,9 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 			service openvpn restart
 			chkconfig openvpn on
 		fi
+	elif [[ "$OS" = 'arch' ]]; then
+		systemctl restart openvpn@server.service
+		systemctl enable openvpn@server.service
 	fi
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit users
 	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
