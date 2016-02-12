@@ -112,6 +112,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf pki/reqs/$CLIENT.req
 			rm -rf pki/private/$CLIENT.key
 			rm -rf pki/issued/$CLIENT.crt
+			rm -rf /etc/openvpn/crl.pem
+			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 			# And restart
 			if pgrep systemd-journal; then
 				systemctl restart openvpn@server.service
@@ -220,7 +222,7 @@ else
 	./easyrsa build-client-full $CLIENT nopass
 	./easyrsa gen-crl
 	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn
+	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
 	# Generate server.conf
 	echo "port $PORT
 proto udp
@@ -269,7 +271,7 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
-crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
+crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -305,6 +307,16 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		sed -i "1 a\iptables -I INPUT -p udp --dport $PORT -j ACCEPT" $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
+	fi
+	# If SELinux is enabled and a custom port was selected, we need this
+	if getenforce | grep -qs "Enforcing"; then
+		if [[ "$PORT" != '1194' ]]; then
+			# semanage isn't available in CentOS 6 by default
+			if ! which semanage > /dev/null 2>&1; then
+				yum install policycoreutils-python -y
+			fi
+			semanage port -a -t openvpn_port_t -p udp $PORT
+		fi
 	fi
 	# And finally, restart OpenVPN
 	if [[ "$OS" = 'debian' ]]; then
