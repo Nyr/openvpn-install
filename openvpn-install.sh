@@ -146,9 +146,11 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 				fi
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
-				if sestatus | grep "Current mode" | grep -qs "enforcing"; then
-					if [[ "$PORT" != '1194' ]]; then
-						semanage port -d -t openvpn_port_t -p udp $PORT
+				if which sestatus; then
+					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+						if [[ "$PORT" != '1194' ]]; then
+							semanage port -d -t openvpn_port_t -p udp $PORT
+						fi
 					fi
 				fi
 				if [[ "$OS" = 'debian' ]]; then
@@ -309,13 +311,15 @@ crl-verify crl.pem" >> /etc/openvpn/server.conf
 		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
 	fi
 	# If SELinux is enabled and a custom port was selected, we need this
-	if sestatus | grep "Current mode" | grep -qs "enforcing"; then
-		if [[ "$PORT" != '1194' ]]; then
-			# semanage isn't available in CentOS 6 by default
-			if ! which semanage > /dev/null 2>&1; then
-				yum install policycoreutils-python -y
+	if which sestatus; then
+		if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+			if [[ "$PORT" != '1194' ]]; then
+				# semanage isn't available in CentOS 6 by default
+				if ! which semanage > /dev/null 2>&1; then
+					yum install policycoreutils-python -y
+				fi
+				semanage port -a -t openvpn_port_t -p udp $PORT
 			fi
-			semanage port -a -t openvpn_port_t -p udp $PORT
 		fi
 	fi
 	# And finally, restart OpenVPN
