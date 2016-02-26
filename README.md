@@ -10,6 +10,10 @@ Run the script and follow the assistant:
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
+## This is a fork
+
+This is a fork of https://github.com/Nyr/openvpn-install. This is my test attempt to add a prompt to ask for your own DNS IP-s during installation.
+
 ###I want to run my own VPN but don't have a server for that
 You can get a little VPS for just $2/month at [Host1Plus](https://affiliates.host1plus.com/ref/nyr.html).
 
