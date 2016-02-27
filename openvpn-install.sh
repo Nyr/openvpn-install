@@ -112,6 +112,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf pki/reqs/$CLIENT.req
 			rm -rf pki/private/$CLIENT.key
 			rm -rf pki/issued/$CLIENT.crt
+			rm -rf /etc/openvpn/crl.pem
+			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 			# And restart
 			if pgrep systemd-journal; then
 				systemctl restart openvpn@server.service
@@ -144,6 +146,13 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 				fi
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
+				if which sestatus; then
+					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+						if [[ "$PORT" != '1194' ]]; then
+							semanage port -d -t openvpn_port_t -p udp $PORT
+						fi
+					fi
+				fi
 				if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
 				else
@@ -179,11 +188,10 @@ else
 	echo ""
 	echo "What DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
-	echo "   2) OpenDNS"
-	echo "   3) Level 3"
+	echo "   2) Google"
+	echo "   3) OpenDNS"
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
-	echo "   6) Google"
 	read -p "DNS [1-6]: " -e -i 1 DNS
 	echo ""
 	echo "Finally, tell me your name for the client cert"
@@ -220,7 +228,7 @@ else
 	./easyrsa build-client-full $CLIENT nopass
 	./easyrsa gen-crl
 	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn
+	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
 	# Generate server.conf
 	echo "port $PORT
 proto udp
@@ -243,13 +251,13 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 			echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server.conf
 		done
 		;;
-		2)
+		2) 
+		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
+		;;
+		3)
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
-		;;
-		3) 
-		echo 'push "dhcp-option DNS 4.2.2.2"' >> /etc/openvpn/server.conf
-		echo 'push "dhcp-option DNS 4.2.2.4"' >> /etc/openvpn/server.conf
 		;;
 		4) 
 		echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server.conf
@@ -258,16 +266,14 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		5) 
 		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
 		;;
-		6) 
-		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
-		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
-		;;
 	esac
 	echo "keepalive 10 120
 comp-lzo
 persist-key
 persist-tun
-crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
+status openvpn-status.log
+verb 3
+crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -303,6 +309,18 @@ crl-verify /etc/openvpn/easy-rsa/pki/crl.pem" >> /etc/openvpn/server.conf
 		sed -i "1 a\iptables -I INPUT -p udp --dport $PORT -j ACCEPT" $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
+	fi
+	# If SELinux is enabled and a custom port was selected, we need this
+	if which sestatus; then
+		if sestatus | grep "Current mode" | grep -qs "enforcing"; then
+			if [[ "$PORT" != '1194' ]]; then
+				# semanage isn't available in CentOS 6 by default
+				if ! which semanage > /dev/null 2>&1; then
+					yum install policycoreutils-python -y
+				fi
+				semanage port -a -t openvpn_port_t -p udp $PORT
+			fi
+		fi
 	fi
 	# And finally, restart OpenVPN
 	if [[ "$OS" = 'debian' ]]; then
@@ -346,7 +364,8 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-comp-lzo" > /etc/openvpn/client-common.txt
+comp-lzo
+verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
