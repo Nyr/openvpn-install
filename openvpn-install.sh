@@ -193,7 +193,7 @@ else
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
 	echo "   6) You specify the DNS server IP-s"
-        read -p "DNS [1-6]: " -e -i 6 DNS
+        read -p "DNS [1-6]: " -e -i 1 DNS
         if [[ "$DNS" = '6' ]]; then
                 echo "Please leave a space between DNS IP entries"
 		echo "Example: 8.8.8.8 8.8.4.4 129.250.35.250"
