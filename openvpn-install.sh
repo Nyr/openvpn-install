@@ -192,8 +192,15 @@ else
 	echo "   3) OpenDNS"
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
-	read -p "DNS [1-6]: " -e -i 1 DNS
-	echo ""
+	echo "   6) You specify the DNS server IP-s"
+        read -p "DNS [1-6]: " -e -i 1 DNS
+        if [[ "$DNS" = '6' ]]; then
+                echo "Please leave a space between DNS IP entries"
+		echo "Example: 8.8.8.8 8.8.4.4 129.250.35.250"
+                read -e -p "Specify the DNS server IP-s. Space is the separator: " OWNDNS
+        else
+                echo ""
+        fi
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
 	read -p "Client name: " -e -i client CLIENT
@@ -266,6 +273,12 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		5) 
 		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
 		;;
+		6)
+		for i in `echo $OWNDNS|tr " " "\n"`;
+                	do
+				echo 'push "dhcp-option DNS '"$i"'"' >> /etc/openvpn/server.conf
+	                done
+                ;;
 	esac
 	echo "keepalive 10 120
 comp-lzo
