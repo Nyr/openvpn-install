@@ -196,6 +196,7 @@ else
         read -p "DNS [1-6]: " -e -i 6 DNS
         if [[ "$DNS" = '6' ]]; then
                 echo "Please leave a space between DNS IP entries"
+		echo "Example: 8.8.8.8 8.8.4.4 129.250.35.250"
                 read -e -p "Specify the DNS server IP-s. Space is the separator: " OWNDNS
         else
                 echo ""
