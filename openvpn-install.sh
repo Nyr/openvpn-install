@@ -275,7 +275,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		6)
 		for i in `echo $OWNDNS|tr " " "\n"`;
                 	do
-				echo 'push "dhcp-option DNS '"$i"'"' >> ./server.conf
+				echo 'push "dhcp-option DNS '"$i"'"' >> /etc/openvpn/server.conf
 	                done
                 ;;
 	esac
