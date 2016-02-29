@@ -345,9 +345,9 @@ crl-verify crl.pem" >> /etc/openvpn/server.conf
 		echo ""
 		echo "Looks like your server is behind a NAT!"
 		echo ""
-		echo "If your server is NATed (LowEndSpirit), I need to know the external IP"
+		echo "If your server is NATed (i.e. LowEndSpirit), I need to know the external IP or FQDN"
 		echo "If that's not the case, just ignore this and leave the next field blank"
-		read -p "External IP: " -e USEREXTERNALIP
+		read -p "External IP or FQDN: " -e USEREXTERNALIP
 		if [[ "$USEREXTERNALIP" != "" ]]; then
 			IP=$USEREXTERNALIP
 		fi
