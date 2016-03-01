@@ -19,6 +19,9 @@ if [[ ! -e /dev/net/tun ]]; then
 	exit 2
 fi
 
+INTERNALSUBNET=10.8.0.0
+INTERNALNETMASKSLASH=24
+INTERNALNETMASK=255.255.255.0
 
 if grep -qs "CentOS release 5" "/etc/redhat-release"; then
 	echo "CentOS 5 is too old and not supported"
@@ -136,16 +139,16 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				if pgrep firewalld; then
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --zone=public --remove-port=$PORT/udp
-					firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
+					firewall-cmd --zone=trusted --remove-source=$INTERNALSUBNET/$INTERNALNETMASKSLASH
 					firewall-cmd --permanent --zone=public --remove-port=$PORT/udp
-					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
+					firewall-cmd --permanent --zone=trusted --remove-source=$INTERNALSUBNET/$INTERNALNETMASKSLASH
 				fi
 				if iptables -L | grep -qE 'REJECT|DROP'; then
 					sed -i "/iptables -I INPUT -p udp --dport $PORT -j ACCEPT/d" $RCLOCAL
-					sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
+					sed -i "/iptables -I FORWARD -s $INTERNALSUBNET\/$INTERNALNETMASKSLASH -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 				fi
-				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
+				sed -i '/iptables -t nat -A POSTROUTING -s $INTERNALSUBNET\/$INTERNALNETMASKSLASH -j SNAT --to /d' $RCLOCAL
 				if which sestatus; then
 					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
 						if [[ "$PORT" != '1194' ]]; then
@@ -240,7 +243,7 @@ cert server.crt
 key server.key
 dh dh.pem
 topology subnet
-server 10.8.0.0 255.255.255.0
+server $INTERNALSUBNET $INTERNALNETMASK
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
