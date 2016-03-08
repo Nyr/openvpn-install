@@ -231,6 +231,7 @@ cert server.crt
 key server.key
 dh dh.pem
 cipher AES-256-CBC
+tls-version-min 1.2
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
@@ -358,8 +359,9 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-comp-lzo
-cipher AES-256-CBC" > /etc/openvpn/client-common.txt
+cipher AES-256-CBC
+tls-version-min 1.2
+comp-lzo" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
