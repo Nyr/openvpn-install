@@ -3,6 +3,12 @@ OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29
 
 This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It isn't bulletproof but has been designed to be as unobtrusive and universal as possible.
 
+### Fork
+This fork includes :
+- no logs
+- TLS 1.2 only
+- AES-256-CBC encryption
+
 ###Installation
 Run the script and follow the assistant:
 
