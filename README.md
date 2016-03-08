@@ -8,6 +8,7 @@ This fork includes :
 - no logs
 - TLS 1.2 only
 - AES-256-CBC encryption
+- [FDN's DNS Servers](http://www.fdn.fr/actions/dns/)
 
 ###Installation
 Run the script and follow the assistant:
