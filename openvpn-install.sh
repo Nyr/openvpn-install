@@ -114,16 +114,6 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf pki/issued/$CLIENT.crt
 			rm -rf /etc/openvpn/crl.pem
 			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
-			# And restart
-			if pgrep systemd-journal; then
-				systemctl restart openvpn@server.service
-			else
-				if [[ "$OS" = 'debian' ]]; then
-					/etc/init.d/openvpn restart
-				else
-					service openvpn restart
-				fi
-			fi
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
 			exit
