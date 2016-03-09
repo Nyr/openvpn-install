@@ -9,7 +9,7 @@ This fork includes :
 - TLS 1.2 only
 - AES-256-CBC encryption
 - [FDN's DNS Servers](http://www.fdn.fr/actions/dns/)
-- Every feature of the [original script](https://github.com/Nyr/openvpn-install) (I check periodically to sync the latest commits)
+- Every feature of the [original script](https://github.com/Nyr/openvpn-install) (I check periodically to sync the latest commits from source)
 
 ###Installation
 Run the script and follow the assistant:
