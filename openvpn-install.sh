@@ -107,9 +107,6 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 			cd /etc/openvpn/easy-rsa/
-			cp vars.example vars
-			#Use 4096 bits DH instead of 2048 bits
-			echo "set_var EASYRSA_KEY_SIZE 4096" >> vars
 			./easyrsa --batch revoke $CLIENT
 			./easyrsa gen-crl
 			rm -rf pki/reqs/$CLIENT.req
