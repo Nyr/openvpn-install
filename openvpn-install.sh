@@ -211,6 +211,9 @@ else
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -rf ~/EasyRSA-3.0.1.tgz
 	cd /etc/openvpn/easy-rsa/
+	cp vars.example vars
+	#Use 4096 bits DH instead of 2048 bits
+	echo "set_var EASYRSA_KEY_SIZE 4096" >> vars
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
