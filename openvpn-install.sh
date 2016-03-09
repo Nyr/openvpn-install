@@ -233,7 +233,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh dh.pem
-cipher AES-256-CBC
+tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 tls-version-min 1.2
 topology subnet
 server 10.8.0.0 255.255.255.0
@@ -362,7 +362,7 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-cipher AES-256-CBC
+tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
 tls-version-min 1.2
 comp-lzo" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
