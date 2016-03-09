@@ -7,6 +7,8 @@
 # your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
 # universal as possible.
 
+PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+VPNFOLDER="$PATH/openVpnConfigFiles"
 
 if [[ "$EUID" -ne 0 ]]; then
 	echo "Sorry, you need to run this as root"
@@ -39,17 +41,19 @@ else
 fi
 
 newclient () {
+	mkdir $VPNFOLDER;
+	
 	# Generates the custom client.ovpn
-	cp /etc/openvpn/client-common.txt ~/$1.ovpn
-	echo "<ca>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/ca.crt >> ~/$1.ovpn
-	echo "</ca>" >> ~/$1.ovpn
-	echo "<cert>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> ~/$1.ovpn
-	echo "</cert>" >> ~/$1.ovpn
-	echo "<key>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
-	echo "</key>" >> ~/$1.ovpn
+	cp /etc/openvpn/client-common.txt $VPNFOLDER/$1.ovpn
+	echo "<ca>" >> $VPNFOLDER/$1.ovpn
+	cat /etc/openvpn/easy-rsa/pki/ca.crt >> $VPNFOLDER/$1.ovpn
+	echo "</ca>" >> $VPNFOLDER/$1.ovpn
+	echo "<cert>" >> $VPNFOLDER/$1.ovpn
+	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> $VPNFOLDER/$1.ovpn
+	echo "</cert>" >> $VPNFOLDER/$1.ovpn
+	echo "<key>" >> $VPNFOLDER/$1.ovpn
+	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> $VPNFOLDER/$1.ovpn
+	echo "</key>" >> $VPNFOLDER/$1.ovpn
 }
 
 
@@ -85,7 +89,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo ""
-			echo "Client $CLIENT added, certs available at ~/$CLIENT.ovpn"
+			echo "Client $CLIENT added, certs available at $VPNFOLDER/$CLIENT.ovpn"
 			exit
 			;;
 			2)
@@ -361,6 +365,6 @@ verb 3" > /etc/openvpn/client-common.txt
 	echo ""
 	echo "Finished!"
 	echo ""
-	echo "Your client config is available at ~/$CLIENT.ovpn"
+	echo "Your client config is available at $VPNFOLDER/$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
