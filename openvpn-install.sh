@@ -197,7 +197,7 @@ else
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl wget ca-certificates which -y
+		yum install openvpn iptables openssl wget ca-certificates -y
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
