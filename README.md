@@ -20,7 +20,7 @@ If your server **and** your client have OpenVPN 2.3.x or higher, use *latest*. I
 
 I made two versions to make sure you can get the best encryption possible, but also to support most devices as possible.
 
-#Latest (OpenVPN 2.3.x)
+###Latest (OpenVPN 2.3.x)
 
 It will work for :
 - Debian 8
@@ -35,7 +35,7 @@ chmod +x openvpn-install.sh
 ./openvpn-install.sh
 ```
 
-#Legacy (OpenVPN 2.2.x)
+###Legacy (OpenVPN 2.2.x)
 
 It's the same script as *latest*, but with TLS 1.0 instead of TLS 1.2 and AES-256-CBC instead of AES-128-GCM. (OpenVPN 2.2.x doesn't support `tls-min` and `tls-cipher`)
 
