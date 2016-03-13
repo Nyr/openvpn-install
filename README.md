@@ -26,7 +26,7 @@ It will work for :
 - Debian 8
 - Ubuntu 15.10
 - CentOS 6
-- Fedora 20
+- Fedora 20, 21, 22
 
 Run the script and follow the assistant:
 
@@ -44,8 +44,7 @@ Other features are still included.
 
 It will work for :
 - Debian 7
-- Ubuntu 12.04 LTS
-- Ubuntu 14.04 LTS
+- Ubuntu 12.04 LTS, 14.04 LTS
 
 Run the script and follow the assistant:
 
