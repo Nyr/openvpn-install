@@ -183,7 +183,7 @@ else
 	echo "   4) NTT"
 	echo "   5) Google"
 	echo "   6) Hurricane Electric"
-	read -p "DNS [1-6]: " -e -i 1 DNS
+	read -p "DNS [1-6]: " -e -i 2 DNS
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
