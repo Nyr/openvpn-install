@@ -8,6 +8,7 @@ This fork includes :
 - no logs
 - TLS 1.2 only
 - AES-128-GCM encryption (instead of BF-CBC)
+- Leagcy version for less hardened encryption
 - 4096 bits DH (instead of 2048 bits)
 - [FDN's DNS Servers](http://www.fdn.fr/actions/dns/)
 - Every feature of the [original script](https://github.com/Nyr/openvpn-install) (I check periodically to sync the latest commits from source)
