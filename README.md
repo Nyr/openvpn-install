@@ -26,7 +26,7 @@ I made two versions to make sure you can get the best encryption possible, but a
 It will work for :
 - Debian 8
 - Ubuntu 15.10
-- CentOS 6
+- CentOS 6, 7
 
 Run the script and follow the assistant:
 
