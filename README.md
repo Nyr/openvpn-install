@@ -18,6 +18,8 @@ To check your OpenVPN version, use `openvpn --version`
 
 If your server **and** your client have OpenVPN 2.3.x or higher, use *latest*. If your server **or** your client have OpenVPN 2.2.x or lower, use *legacy*.
 
+I made two versions to make sure you can get the best encryption possible, but also to support most devices as possible.
+
 #Latest (OpenVPN 2.3.x)
 
 It will work for :
@@ -35,7 +37,10 @@ chmod +x openvpn-install.sh
 
 #Legacy (OpenVPN 2.2.x)
 
-It's the same script as *latest*, but with older TLS version and cipher suite, to support older devices.
+It's the same script as *latest*, but with TLS 1.0 instead of TLS 1.2 and AES-256-CBC instead of AES-128-GCM. (OpenVPN 2.2.x doesn't support `tls-min` and `tls-cipher`)
+
+Other features are still included.
+
 It will work for :
 - Debian 7
 - Ubuntu 12.04 LTS
