@@ -26,6 +26,7 @@ It will work for :
 - Debian 8
 - Ubuntu 14.04 LTS
 - Ubuntu 15.10
+- CentOS 6
 
 Run the script and follow the assistant:
 
