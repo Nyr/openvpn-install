@@ -15,7 +15,7 @@ fi
 
 
 if [[ ! -e /dev/net/tun ]]; then
-	echo "TUN/TAP is not available"
+	echo "TUN is not available"
 	exit 2
 fi
 
