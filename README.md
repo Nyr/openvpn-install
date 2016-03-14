@@ -44,7 +44,7 @@ Other features are still included.
 
 It will work for :
 - Debian 7
-- Ubuntu 12.04 LTS, 14.04 LTS
+- Ubuntu 12.04 LTS, 14.04 LTS, 15.04
 
 Run the script and follow the assistant:
 
