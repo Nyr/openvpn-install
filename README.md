@@ -15,6 +15,20 @@ This fork includes :
 
 ##Installation
 
+Run the script and follow the assistant:
+
+```
+wget --no-check-certificate https://raw.githubusercontent.com/Angristan/OpenVPN-install-nyr/master/openvpn-install.sh
+chmod +x openvpn-install.sh
+./openvpn-install.sh
+```
+
+Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
+
+##Variants 
+
+When you will launch the script, you will be asked to choose the variant of the script you want to use.
+
 To check your OpenVPN version, use `openvpn --version`
 
 If your server **and** your client have OpenVPN 2.3.3 or higher, use *latest*. If your server **or** your client have OpenVPN 2.3.2 or lower, use *legacy*.
@@ -28,14 +42,7 @@ It will work for :
 - Ubuntu 15.10
 - CentOS 6
 - CentOS 7
-
-Run the script and follow the assistant:
-
-```
-wget --no-check-certificate https://raw.githubusercontent.com/Angristan/OpenVPN-install-nyr/master/openvpn-install.sh
-chmod +x openvpn-install.sh
-./openvpn-install.sh
-```
+- All recent clients with OpenVPN 2.3.3 or higher
 
 ###Legacy (OpenVPN < 2.3.2)
 
@@ -43,21 +50,14 @@ It's the same script as *latest*, but with TLS 1.0 instead of TLS 1.2 and AES-25
 
 Other features are still included.
 
-It will work for :
+The following Operating Systems are only supported by the *legacy* variant :
 - Debian 7
 - Ubuntu 12.04 LTS
 - Ubuntu 14.04 LTS
 - Ubuntu 15.04
+- All older clients with OpenVPN 2.3.2 or lower (it *could* be NAS devices, routers, etc)
 
-Run the script and follow the assistant:
 
-```
-wget --no-check-certificate https://raw.githubusercontent.com/Angristan/OpenVPN-install-nyr/master/openvpn-install-legacy.sh
-chmod +x openvpn-install-legacy.sh
-./openvpn-install-legacy.sh
-```
-
-Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
 You can get a little VPS for just 1.49€/month at [PulseHeberg](http://manager.pulseheberg.com/aff.php?aff=1204).
 
