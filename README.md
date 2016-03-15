@@ -57,6 +57,8 @@ The following Operating Systems are only supported by the *legacy* variant :
 - Ubuntu 15.04
 - All older clients with OpenVPN 2.3.2 or lower (it *could* be NAS devices, routers, etc)
 
+If your server and/or your client does not support OpenVPN 2.3.3 or higher, you should use *legacy*.
+
 
 
 You can get a little VPS for just 1.49€/month at [PulseHeberg](http://manager.pulseheberg.com/aff.php?aff=1204).
