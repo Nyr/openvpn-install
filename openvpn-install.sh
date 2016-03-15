@@ -169,8 +169,15 @@ else
 	echo "I need to ask you a few questions before starting the setup"
 	echo "You can leave the default options and just press enter if you are ok with them"
 	echo ""
-	echo "First I need to know the IPv4 address of the network interface you want OpenVPN"
-	echo "listening to."
+	echo "First, choose which variant of the script you want to use."
+	echo "Read carefully the README on GitHub before choosing. Use legacy of you're not sure."
+	echo "   1) Latest (High encryption, not compatible with all servers and clients)"
+	echo "   2) Legacy (Work with most devices)"
+	read -p "Variant [1-2]: " -e -i 2 VER
+	echo ""
+	echo "I need to know the IPv4 address of the network interface you want OpenVPN listening to."
+	echo "If you server is running behind a NAT, (e.g. LowEndSpirit, Scaleway) leave the IP adress as it is. (10.x.x.x)"
+	echo "Otherwise, it sould be your public IPv4 address."
 	read -p "IP address: " -e -i $IP IP
 	echo ""
 	echo "What port do you want for OpenVPN?"
@@ -191,7 +198,7 @@ else
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
-		if [[ "$OS" = 'debian' ]]; then
+	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
 	else
@@ -232,11 +239,18 @@ ca ca.crt
 cert server.crt
 key server.key
 dh dh.pem
-tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-tls-version-min 1.2
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+	if [[ "$VER" = '1' ]]; then 
+		#If we're using the latest variant
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
+tls-version-min 1.2" >> /etc/openvpn/server.conf
+	else
+		# If the user slected legacy
+		# Or if the user selected a non-existant variant, we fallback to legacy
+		echo "cipher AES-256-CBC" >> /etc/openvpn/server.conf
+	fi
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
@@ -361,9 +375,16 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-tls-version-min 1.2
 comp-lzo" > /etc/openvpn/client-common.txt
+	if [[ "$VER" = '1' ]]; then 
+		#If we're using the latest variant
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
+tls-version-min 1.2" >> /etc/openvpn/client-common.txt
+	else
+		# If the user slected legacy
+		# Or if the user selected a non-existant variant, we fallback to legacy
+		echo "cipher AES-256-CBC" >> /etc/openvpn/client-common.txt
+	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
