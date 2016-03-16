@@ -61,7 +61,7 @@ If your server and/or your client does not support OpenVPN 2.3.3 or higher, you 
 
 
 
-You can get a little VPS for just 1.49€/month at [PulseHeberg](http://manager.pulseheberg.com/aff.php?aff=1204).
+You can get a high speed VPS in 14 locations around the world at [Vultr](http://www.vultr.com/?ref=6879746). (Sign up for 5$ free credit !)
 
 ## Licence
 
