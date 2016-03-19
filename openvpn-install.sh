@@ -26,8 +26,14 @@ if grep -qs "CentOS release 5" "/etc/redhat-release"; then
 fi
 
 if [[ -e /etc/debian_version ]]; then
-	OS=debian
+	OS="debian"
+	#We get the version number, to verify we can get a recent version of OpenVPN
+	VERSION_ID=$(cat /etc/*-release | grep "VERSION_ID")
 	RCLOCAL='/etc/rc.local'
+	if [[ "$VERSION_ID" != 'VERSION_ID="7"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="8"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="12.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="14.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="15.10"' ]]; then
+		echo "Your version of Debian/Ubuntu is not supported. Please look at the documentation."
+		exit 4
+	fi
 elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	OS=centos
 	RCLOCAL='/etc/rc.d/rc.local'
@@ -170,10 +176,13 @@ else
 	echo "You can leave the default options and just press enter if you are ok with them"
 	echo ""
 	echo "First, choose which variant of the script you want to use."
-	echo "Read carefully the README on GitHub before choosing. Use legacy of you're not sure."
-	echo "   1) Latest (High encryption, not compatible with all servers and clients)"
-	echo "   2) Legacy (Work with most devices)"
-	read -p "Variant [1-2]: " -e -i 2 VER
+	echo '"Fast" is secure, but "slow" is the best encryption you can get, at the cost of speed (not that slow though)'
+	echo "   1) Fast (2048 bits RSA and DH, 128 bits AES)"
+	echo "   2) Slow (4096 bits RSA and DH, 256 bits AES)"
+	while [[ $VARIANT !=  "1" && $VARIANT != "2" ]]; do
+		read -p "Variant [1-2]: " -e -i 1 VARIANT
+	done
+	
 	echo ""
 	echo "I need to know the IPv4 address of the network interface you want OpenVPN listening to."
 	echo "If you server is running behind a NAT, (e.g. LowEndSpirit, Scaleway) leave the IP adress as it is. (10.x.x.x)"
@@ -186,10 +195,9 @@ else
 	echo "What DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
 	echo "   2) FDN (recommended)"
-	echo "   3) OpenDNS"
-	echo "   4) NTT"
+	echo "   3) OpenNIC (nearest servers)"
+	echo "   4) OpenDNS"
 	echo "   5) Google"
-	echo "   6) Hurricane Electric"
 	read -p "DNS [1-6]: " -e -i 2 DNS
 	echo ""
 	echo "Finally, tell me your name for the client cert"
@@ -199,13 +207,40 @@ else
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
-		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		# We add the OpenVPN repo to get the latest version.
+		# Debian 7
+		if [[ "$VERSION_ID" = 'VERSION_ID="7"' ]]; then
+			echo "deb http://swupdate.openvpn.net/apt wheezy main" > /etc/apt/sources.list.d/swupdate-openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
+		# Debian 8
+		if [[ "$VERSION_ID" = 'VERSION_ID="8"' ]]; then
+			echo "deb http://swupdate.openvpn.net/apt jessie main" > /etc/apt/sources.list.d/swupdate-openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt update
+		fi
+		# Ubuntu 12.04
+		if [[ "$VERSION_ID" = 'VERSION_ID="12.04"' ]]; then
+			echo "deb http://swupdate.openvpn.net/apt precise main" > /etc/apt/sources.list.d/swupdate-openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
+		# Ubuntu 14.04
+		if [[ "$VERSION_ID" = 'VERSION_ID="14.04"' ]]; then
+			echo "deb http://swupdate.openvpn.net/apt trusty main" > /etc/apt/sources.list.d/swupdate-openvpn.list
+			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
+			apt-get update
+		fi
+		# The repo, is not available for Ubuntu 15.10, but it has OpenVPN > 2.3.3, so we do nothing.
+		# The we install OpnVPN
+		apt-get install openvpn iptables openssl wget ca-certificates curl -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl wget ca-certificates -y
+		yum install openvpn iptables openssl wget ca-certificates curl -y
 	fi
+	
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
 		rm -rf /etc/openvpn/easy-rsa/
@@ -218,8 +253,18 @@ else
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -rf ~/EasyRSA-3.0.1.tgz
 	cd /etc/openvpn/easy-rsa/
-	#Use 4096 bits DH instead of 2048 bits
-	echo "set_var EASYRSA_KEY_SIZE 4096" > vars
+	# If the user selected the fast, less hardened version
+	if [[ "$VARIANT" = '1' ]]; then
+		echo "set_var EASYRSA_KEY_SIZE 2048
+set_var EASYRSA_KEY_SIZE 2048
+set_var EASYRSA_DIGEST "sha256"" > vars
+	fi
+	# If the user selected the relatively slow, ultra hardened version
+	if [[ "$VARIANT" = '2' ]]; then
+		echo "set_var EASYRSA_KEY_SIZE 4096
+set_var EASYRSA_KEY_SIZE 4096
+set_var EASYRSA_DIGEST "sha384"" > vars
+	fi
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
@@ -241,15 +286,17 @@ key server.key
 dh dh.pem
 topology subnet
 server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
-	if [[ "$VER" = '1' ]]; then 
-		#If we're using the latest variant
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-tls-version-min 1.2" >> /etc/openvpn/server.conf
-	else
-		# If the user slected legacy
-		# Or if the user selected a non-existant variant, we fallback to legacy
-		echo "cipher AES-256-CBC" >> /etc/openvpn/server.conf
+ifconfig-pool-persist ipp.txt
+cipher AES-256-CBC
+auth SHA512
+tls-version-min 1.2" > /etc/openvpn/server.conf
+	if [[ "$VARIANT" = '1' ]]; then
+		# If the user selected the fast, less hardened version
+		# Or if the user selected a non-existant variant, we fallback to fast
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256" >> /etc/openvpn/server.conf
+	elif [[ "$VARIANT" = '2' ]]; then
+		# If the user selected the relatively slow, ultra hardened version
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384" >> /etc/openvpn/server.conf
 	fi
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
@@ -260,24 +307,25 @@ tls-version-min 1.2" >> /etc/openvpn/server.conf
 			echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server.conf
 		done
 		;;
-		2) 
+		2) #FDN
 		echo 'push "dhcp-option DNS 80.67.169.12"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 80.67.169.40"' >> /etc/openvpn/server.conf
 		;;
-		3)
+		3) #OpenNIC
+		#Getting the nearest OpenNIC servers using the geoip API
+		read ns1 ns2 <<< $(curl -s https://api.opennicproject.org/geoip/ | head -2 | awk '{print $1}')
+		echo -e "nameserver $ns1
+		nameserver $ns2" >> /etc/resolv.conf #Set the DNS servers
+		echo "push "dhcp-option DNS $ns1"" >> /etc/openvpn/server.conf
+		echo "push "dhcp-option DNS $ns2"" >> /etc/openvpn/server.conf
+		;;
+		4) #OpenDNS 
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
 		;;
-		4) 
-		echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server.conf
-		echo 'push "dhcp-option DNS 129.250.35.251"' >> /etc/openvpn/server.conf
-		;;
-		5)
+		5) #Google 
 		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
-		;;
-		6) 
-		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
@@ -375,15 +423,17 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-comp-lzo" > /etc/openvpn/client-common.txt
-	if [[ "$VER" = '1' ]]; then 
-		#If we're using the latest variant
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
-tls-version-min 1.2" >> /etc/openvpn/client-common.txt
-	else
-		# If the user slected legacy
-		# Or if the user selected a non-existant variant, we fallback to legacy
-		echo "cipher AES-256-CBC" >> /etc/openvpn/client-common.txt
+comp-lzo
+cipher AES-256-CBC
+auth SHA512
+tls-version-min 1.2" > /etc/openvpn/client-common.txt
+	if [[ "$VARIANT" = '1' ]]; then
+		# If the user selected the fast, less hardened version
+		# Or if the user selected a non-existant variant, we fallback to fast
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256" >> /etc/openvpn/client-common.txt
+	elif [[ "$VARIANT" = '2' ]]; then
+		# If the user selected the relatively slow, ultra hardened version
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384" >> /etc/openvpn/client-common.txt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
