@@ -5,13 +5,49 @@ This script will let you setup your own VPN server in no more than a minute, eve
 
 ##Fork
 This fork includes :
-- no logs
+- No logs
+- Better encryption (see below)
 - TLS 1.2 only
-- AES-128-GCM encryption (instead of BF-CBC)
-- Legacy version for less hardened encryption
-- 4096 bits DH (instead of 2048 bits)
+- AES-256-CBC and SHA-512 for HMAC (instead of BF-128-CBC and SHA1)
 - [FDN's DNS Servers](http://www.fdn.fr/actions/dns/)
+- Nearest [OpenNIC DNS Servers](https://www.opennicproject.org/)
+- Up-to-date OpenVPN (2.3.10) thanks to [EPEL](http://fedoraproject.org/wiki/EPEL) and [swupdate.openvpn.net](https://community.openvpn.net/openvpn/wiki/OpenvpnSoftwareRepos)
 - Every feature of the [original script](https://github.com/Nyr/openvpn-install) (I check periodically to sync the latest commits from source)
+
+## Variants
+
+When you lauch the script you will be asked to choose a mode. Both will work the same way, but *slow* has higher encryption settings, so it may slow down your connection and take more time to install.
+
+If you're just using your VPN at home, you may choose "fast". But if you're often using public Wi-Fi or traveling a lot, you choose use *slow*.
+
+FYI, "fast" is still more secured than default OpenVPN settings.
+
+### Slow (high encryption)
+Features :
+- 4096 bits RSA private key
+- 4096 bits Diffie-Hellman key
+- 256 bits AES-GCM
+- SHA-384 RSA certificate
+
+### Fast (lower encryption)
+Features :
+- 2048 bits RSA private key
+- 2048 bits Diffie-Hellman key
+- 128 bits AES-GCM
+- SHA-256 RSA certificate
+
+## Compatibility
+
+The script is made to work on these OS :
+- Debian 7
+- Debian 8
+- Ubuntu 12.04 LTS
+- Ubuntu 14.04 LTS
+- Ubuntu 15.10
+- CentOS 6
+- CentOS 7
+
+Each one has been test by myself.
 
 ##Installation
 
@@ -24,41 +60,6 @@ chmod +x openvpn-install.sh
 ```
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
-
-##Variants 
-
-When you will launch the script, you will be asked to choose the variant of the script you want to use.
-
-To check your OpenVPN version, use `openvpn --version`
-
-If your server **and** your client have OpenVPN 2.3.3 or higher, use *latest*. If your server **or** your client have OpenVPN 2.3.2 or lower, use *legacy*.
-
-I made two versions to make sure you can get the best encryption possible, but also to support most devices as possible.
-
-###Latest (OpenVPN > 2.3.3)
-
-It will work for :
-- Debian 8
-- Ubuntu 15.10
-- CentOS 6
-- CentOS 7
-- All recent clients with OpenVPN 2.3.3 or higher
-
-###Legacy (OpenVPN < 2.3.2)
-
-It's the same script as *latest*, but with TLS 1.0 instead of TLS 1.2 and AES-256-CBC instead of AES-128-GCM. (OpenVPN 2.3.2 and lower doesn't support `tls-min` and `tls-cipher`)
-
-Other features are still included.
-
-The following Operating Systems are only supported by the *legacy* variant :
-- Debian 7
-- Ubuntu 12.04 LTS
-- Ubuntu 14.04 LTS
-- Ubuntu 15.04
-- All older clients with OpenVPN 2.3.2 or lower (it *could* be NAS devices, routers, etc)
-
-If your server and/or your client does not support OpenVPN 2.3.3 or higher, you should use *legacy*.
-
 
 
 You can get a high speed VPS in 14 locations around the world at [Vultr](http://www.vultr.com/?ref=6879746). (Sign up for 5$ free credit !)
