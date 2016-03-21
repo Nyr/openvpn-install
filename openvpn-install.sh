@@ -436,10 +436,15 @@ tls-version-min 1.2" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
 		# Or if the user selected a non-existant variant, we fallback to fast
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256" >> /etc/openvpn/client-common.txt
+		echo "tls-cipher DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA256::DHE-RSA-CAMELLIA256-SHA:DHE-RSA-AES256-SHA:DHE-RSA\
+\-CAMELLIA128-SHA:DHE-RSA-AES128-SHA:CAMELLIA256-SHA:AES256-SHA:CAMELLIA128-SHA:\
+\AES128-SHA" >> /etc/openvpn/client-common.txt
 	elif [[ "$VARIANT" = '2' ]]; then
 		# If the user selected the relatively slow, ultra hardened version
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384" >> /etc/openvpn/client-common.txt
+		echo "tls-cipher DHE-RSA-AES256-GCM-SHA384:DHE-RSA-AES256-SHA256:DHE-RSA-AES128-GCM-\
+\SHA256:DHE-RSA-AES128-SHA256:DHE-RSA-CAMELLIA256-SHA:DHE-RSA-AES256-SHA:DHE-RSA\
+\-CAMELLIA128-SHA:DHE-RSA-AES128-SHA:CAMELLIA256-SHA:AES256-SHA:CAMELLIA128-SHA:\
+\AES128-SHA" >> /etc/openvpn/client-common.txt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
