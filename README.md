@@ -6,6 +6,7 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ##Fork
 This fork includes :
 - No logs
+- No comp-lzo (compression is a vector for oracle attacks, e.g. CRIME or BREACH)
 - Better encryption (see below)
 - TLS 1.2 only
 - AES-256-CBC and SHA-512 for HMAC (instead of BF-128-CBC and SHA1)
