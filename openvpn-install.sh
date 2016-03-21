@@ -330,7 +330,7 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
-##comp-lzo
+#comp-lzo
 persist-key
 persist-tun
 crl-verify crl.pem" >> /etc/openvpn/server.conf
@@ -424,7 +424,7 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-comp-lzo
+#comp-lzo
 cipher AES-256-CBC
 auth SHA512
 tls-version-min 1.2" > /etc/openvpn/client-common.txt
