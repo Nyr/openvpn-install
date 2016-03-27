@@ -63,7 +63,8 @@ chmod +x openvpn-install.sh
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
 
-You can get a high speed VPS in 14 locations around the world at [Vultr](http://www.vultr.com/?ref=6879746). (Sign up for 5$ free credit !)
+You can get a cheap VPS for 2€/month at [PulseHeberg](http://manager.pulseheberg.com/aff.php?aff=1204
+).
 
 ## Licence
 
