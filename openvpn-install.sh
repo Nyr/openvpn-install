@@ -182,6 +182,7 @@ else
 	echo "   3) OpenDNS"
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
+	echo "   6) Verisign"
 	read -p "DNS [1-6]: " -e -i 1 DNS
 	echo ""
 	echo "Finally, tell me your name for the client cert"
@@ -255,6 +256,10 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		;;
 		5) 
 		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
+		;;
+		6) 
+		echo 'push "dhcp-option DNS 64.6.64.6"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
