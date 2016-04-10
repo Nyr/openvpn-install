@@ -275,6 +275,8 @@ set_var EASYRSA_DIGEST "sha384"" > vars
 	./easyrsa gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
+	# Make cert revocation list readable for non-root
+	chmod 644 /etc/openvpn/crl.pem
 	# Generate server.conf
 	echo "port $PORT
 proto udp
@@ -283,6 +285,8 @@ ca ca.crt
 cert server.crt
 key server.key
 dh dh.pem
+user nobody
+group nogroup
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt
