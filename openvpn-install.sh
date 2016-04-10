@@ -315,8 +315,8 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 		read ns1 ns2 <<< $(curl -s https://api.opennicproject.org/geoip/ | head -2 | awk '{print $1}')
 		echo -e "nameserver $ns1
 		nameserver $ns2" >> /etc/resolv.conf #Set the DNS servers
-		echo "push "dhcp-option DNS $ns1"" >> /etc/openvpn/server.conf
-		echo "push "dhcp-option DNS $ns2"" >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS $ns1"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS $ns2"' >> /etc/openvpn/server.conf
 		;;
 		4) #OpenDNS 
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
