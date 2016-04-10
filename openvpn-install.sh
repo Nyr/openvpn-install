@@ -56,6 +56,10 @@ newclient () {
 	echo "<key>" >> ~/$1.ovpn
 	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
 	echo "</key>" >> ~/$1.ovpn
+	echo "key-direction 1" >> ~/$1.ovpn
+	echo "<tls-auth>" >> ~/$1.ovpn
+	cat /etc/openvpn/tls-auth.key >> ~/$1.ovpn
+	echo "</tls-auth>" >> ~/$1.ovpn
 }
 
 
@@ -273,6 +277,8 @@ set_var EASYRSA_DIGEST "sha384"" > vars
 	./easyrsa build-server-full server nopass
 	./easyrsa build-client-full $CLIENT nopass
 	./easyrsa gen-crl
+	# generate tls-auth key
+	openvpn --genkey --secret /etc/openvpn/tls-auth.key
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
 	# Make cert revocation list readable for non-root
@@ -334,7 +340,9 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 	echo "keepalive 10 120
 persist-key
 persist-tun
-crl-verify crl.pem" >> /etc/openvpn/server.conf
+crl-verify crl.pem
+tls-server
+tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -425,7 +433,8 @@ persist-tun
 remote-cert-tls server
 cipher AES-256-CBC
 auth SHA512
-tls-version-min 1.2" > /etc/openvpn/client-common.txt
+tls-version-min 1.2
+tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
 		# Or if the user selected a non-existant variant, we fallback to fast
