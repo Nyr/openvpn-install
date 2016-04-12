@@ -145,7 +145,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 				fi
-				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
+				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 /d' $RCLOCAL
 				if hash sestatus 2>/dev/null; then
 					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
 						if [[ "$PORT" != '1194' ]]; then
@@ -203,6 +203,14 @@ else
 	echo "   4) OpenDNS"
 	echo "   5) Google"
 	read -p "DNS [1-6]: " -e -i 2 DNS
+	echo ""
+	echo "Some setups (e.g. Amazon Web Services), require use of MASQUERADE rather than SNAT"
+	echo "Which forwarding method do you want to use [if unsure, leave as default]?"
+	echo "   1) SNAT (default)"
+	echo "   2) MASQUERADE"
+	while [[ $FORWARD_TYPE !=  "1" && $FORWARD_TYPE != "2" ]]; do
+		read -p "Forwarding type: " -e -i 1 FORWARD_TYPE
+	done
 	echo ""
 	echo "Finally, tell me your name for the client cert"
 	echo "Please, use one word only, no special characters"
@@ -301,8 +309,7 @@ auth SHA512
 tls-version-min 1.2" > /etc/openvpn/server.conf
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
-		# Or if the user selected a non-existant variant, we fallback to fast
-		# iOS OpenVPN connect doesn't support GCM or SHA256, use next best
+		# iOS OpenVPN connect doesn't support GCM or SHA256; use next best
 		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA" >> /etc/openvpn/server.conf
 	elif [[ "$VARIANT" = '2' ]]; then
 		# If the user selected the relatively slow, ultra hardened version
@@ -356,8 +363,13 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 	# Avoid an unneeded reboot
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	# Set NAT for the VPN subnet
-	iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
-	sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
+	if [[ "$FORWARD_TYPE" = '1' ]]; then
+		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
+		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
+	else
+		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
+		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE" $RCLOCAL
+	fi
 	if pgrep firewalld; then
 		# We don't use --add-service=openvpn because that would only work with
 		# the default port. Using both permanent and not permanent rules to
@@ -436,7 +448,6 @@ tls-version-min 1.2
 tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
-		# Or if the user selected a non-existant variant, we fallback to fast
 		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA" >> /etc/openvpn/client-common.txt
 	elif [[ "$VARIANT" = '2' ]]; then
 		# If the user selected the relatively slow, ultra hardened version
