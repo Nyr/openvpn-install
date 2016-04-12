@@ -10,6 +10,9 @@ This fork includes :
 - Better encryption (see below)
 - TLS 1.2 only
 - AES-256-CBC and SHA-512 for HMAC (instead of BF-128-CBC and SHA1)
+- Run server in unprivileged mode, reducing risks to the system
+- TLS-auth to help [thwart DoS attacks](https://openvpn.net/index.php/open-source/documentation/howto.html#security) and provide a 2nd line of defense to the TLS channel.
+- [Perfect forward secrecy](http://en.wikipedia.org/wiki/Forward_secrecy)
 - [FDN's DNS Servers](http://www.fdn.fr/actions/dns/)
 - Nearest [OpenNIC DNS Servers](https://www.opennicproject.org/)
 - Up-to-date OpenVPN (2.3.11) thanks to [EPEL](http://fedoraproject.org/wiki/EPEL) and [swupdate.openvpn.net](https://community.openvpn.net/openvpn/wiki/OpenvpnSoftwareRepos)
@@ -30,12 +33,12 @@ Features :
 - 256 bits AES-GCM
 - SHA-384 RSA certificate
 
-### Fast (lower encryption)
+### Fast (lower encryption, supports openvpn connect [ios/android] clients)
 Features :
 - 2048 bits RSA private key
 - 2048 bits Diffie-Hellman key
-- 128 bits AES-GCM
-- SHA-256 RSA certificate
+- 128 bits AES-CBC
+- SHA-128 RSA certificate
 
 ## Compatibility
 
