@@ -302,7 +302,8 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
 		# Or if the user selected a non-existant variant, we fallback to fast
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256" >> /etc/openvpn/server.conf
+		# iOS OpenVPN connect doesn't support GCM or SHA256, use next best
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA" >> /etc/openvpn/server.conf
 	elif [[ "$VARIANT" = '2' ]]; then
 		# If the user selected the relatively slow, ultra hardened version
 		echo "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384" >> /etc/openvpn/server.conf
@@ -436,7 +437,7 @@ tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
 		# Or if the user selected a non-existant variant, we fallback to fast
-		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256" >> /etc/openvpn/client-common.txt
+		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA" >> /etc/openvpn/client-common.txt
 	elif [[ "$VARIANT" = '2' ]]; then
 		# If the user selected the relatively slow, ultra hardened version
 		echo "tls-cipher TLS-DHE-RSA-WITH-AES-256-GCM-SHA384" >> /etc/openvpn/client-common.txt
