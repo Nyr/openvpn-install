@@ -348,10 +348,7 @@ persist-key
 persist-tun
 crl-verify crl.pem
 tls-server
-tls-auth tls-auth.key 0
-status openvpn-status.log
-max-clients 3
-verb 3" >> /etc/openvpn/server.conf
+tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
 		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
@@ -448,8 +445,7 @@ remote-cert-tls server
 cipher AES-256-CBC
 auth SHA512
 tls-version-min 1.2
-tls-client
-verb 3" > /etc/openvpn/client-common.txt
+tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
 		# If the user selected the fast, less hardened version
 		echo "tls-cipher TLS-DHE-RSA-WITH-AES-128-CBC-SHA" >> /etc/openvpn/client-common.txt
