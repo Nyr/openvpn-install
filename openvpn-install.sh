@@ -30,7 +30,7 @@ if [[ -e /etc/debian_version ]]; then
 	#We get the version number, to verify we can get a recent version of OpenVPN
 	VERSION_ID=$(cat /etc/*-release | grep "VERSION_ID")
 	RCLOCAL='/etc/rc.local'
-	if [[ "$VERSION_ID" != 'VERSION_ID="7"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="8"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="12.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="14.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="15.10"' ]]; then
+	if [[ "$VERSION_ID" != 'VERSION_ID="7"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="8"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="12.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="14.04"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="15.10"' ]] && [[ "$VERSION_ID" != 'VERSION_ID="16.04"' ]]; then
 		echo "Your version of Debian/Ubuntu is not supported. Please look at the documentation."
 		exit 4
 	fi
@@ -233,7 +233,7 @@ else
 			wget -O - https://swupdate.openvpn.net/repos/repo-public.gpg | apt-key add -
 			apt-get update
 		fi
-		# The repo, is not available for Ubuntu 15.10, but it has OpenVPN > 2.3.3, so we do nothing.
+		# The repo, is not available for Ubuntu 15.10 and 16.04, but it has OpenVPN > 2.3.3, so we do nothing.
 		# The we install OpnVPN
 		apt-get install openvpn iptables openssl wget ca-certificates curl -y
 	else
