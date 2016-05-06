@@ -45,6 +45,7 @@ The script is made to work on these OS :
 - Ubuntu 12.04 LTS
 - Ubuntu 14.04 LTS
 - Ubuntu 15.10
+- Ubuntu 16.04 LTS
 - CentOS 6
 - CentOS 7
 
