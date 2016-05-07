@@ -253,6 +253,12 @@ else
 		yum install epel-release -y
 		yum install openvpn iptables openssl wget ca-certificates curl -y
 	fi
+	# find out if the machine uses nogroup or nobody for the permissionless group
+	if grep -qs "^nogroup:" /etc/group; then
+	        NOGROUP=nogroup
+	else
+        	NOGROUP=nobody
+	fi
 	
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
@@ -300,7 +306,7 @@ cert server.crt
 key server.key
 dh dh.pem
 user nobody
-group nogroup
+group $NOGROUP
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt
