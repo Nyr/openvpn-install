@@ -41,10 +41,12 @@ fi
 # Makes the VPN folder in home, to keep things neater
 # Also using a variable for possible future adaptation and customization
 
-baseFolder="~/vpn"
+#baseFolder="~/vpn"
+baseFolder="/home/$(whoami)/vpn"
 
 newclient () {
-	baseFolder="~/vpn"
+	#baseFolder="~/vpn"
+	baseFolder="/home/$(whoami)/vpn"	
 	
 	mkdir $baseFolder -p
 	
