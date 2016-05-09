@@ -49,16 +49,17 @@ newclient () {
 	mkdir $baseFolder -p
 	
 	# Generates the custom client.ovpn
-	cp /etc/openvpn/client-common.txt $baseFolder/$1.ovpn
-	echo "<ca>" >> $baseFolder/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/ca.crt >> $baseFolder/$1.ovpn
-	echo "</ca>" >> $baseFolder/$1.ovpn
-	echo "<cert>" >> $baseFolder/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> $baseFolder/$1.ovpn
-	echo "</cert>" >> $baseFolder/$1.ovpn
-	echo "<key>" >> $baseFolder/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> $baseFolder/$1.ovpn
-	echo "</key>" >> $baseFolder/$1.ovpn
+	touch "$baseFolder/$1.ovpn"
+	cp /etc/openvpn/client-common.txt "$baseFolder/$1.ovpn"
+	echo "<ca>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/ca.crt >> "$baseFolder/$1.ovpn"
+	echo "</ca>" >> "$baseFolder/$1.ovpn"
+	echo "<cert>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> "$baseFolder/$1.ovpn"
+	echo "</cert>" >> "$baseFolder/$1.ovpn"
+	echo "<key>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> "$baseFolder/$1.ovpn"
+	echo "</key>" >> "$baseFolder/$1.ovpn"
 }
 
 
