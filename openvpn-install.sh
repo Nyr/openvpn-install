@@ -42,11 +42,11 @@ fi
 # Also using a variable for possible future adaptation and customization
 
 #baseFolder="~/vpn"
-baseFolder="/home/$(whoami)/vpn"
+baseFolder="$HOME/vpn"
 
 newclient () {
 	#baseFolder="~/vpn"
-	baseFolder="/home/$(whoami)/vpn"	
+	baseFolder="$HOME/vpn"	
 	
 	mkdir $baseFolder -p
 	
