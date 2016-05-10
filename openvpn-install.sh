@@ -8,23 +8,26 @@
 # universal as possible.
 
 
-if [[ "$EUID" -ne 0 ]]; then
-	echo "Sorry, you need to run this as root"
+# Detect Debian users running the script with "sh" instead of bash
+if readlink /proc/$$/exe | grep -qs "dash"; then
+	echo "This script needs to be run with bash, not sh"
 	exit 1
 fi
 
-
-if [[ ! -e /dev/net/tun ]]; then
-	echo "TUN is not available"
+if [[ "$EUID" -ne 0 ]]; then
+	echo "Sorry, you need to run this as root"
 	exit 2
 fi
 
-
-if grep -qs "CentOS release 5" "/etc/redhat-release"; then
-	echo "CentOS 5 is too old and not supported"
+if [[ ! -e /dev/net/tun ]]; then
+	echo "TUN is not available"
 	exit 3
 fi
 
+if grep -qs "CentOS release 5" "/etc/redhat-release"; then
+	echo "CentOS 5 is too old and not supported"
+	exit 4
+fi
 if [[ -e /etc/debian_version ]]; then
 	OS=debian
 	RCLOCAL='/etc/rc.local'
@@ -35,7 +38,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	chmod +x /etc/rc.d/rc.local
 else
 	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
-	exit 4
+	exit 5
 fi
 
 newclient () {
@@ -52,7 +55,6 @@ newclient () {
 	echo "</key>" >> ~/$1.ovpn
 }
 
-
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
@@ -60,7 +62,6 @@ IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,
 if [[ "$IP" = "" ]]; then
 		IP=$(wget -qO- ipv4.icanhazip.com)
 fi
-
 
 if [[ -e /etc/openvpn/server.conf ]]; then
 	while :
@@ -95,7 +96,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
 				echo ""
 				echo "You have no existing clients!"
-				exit 5
+				exit 6
 			fi
 			echo ""
 			echo "Select the existing client certificate you want to revoke"
