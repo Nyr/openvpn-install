@@ -41,18 +41,29 @@ else
 	exit 5
 fi
 
+# Makes the VPN folder in home, to keep things neater
+# Also using a variable for possible future adaptation and customization
+
+baseFolder="$HOME/vpn"
+
 newclient () {
+
+#	baseFolder="$HOME/vpn"	
+	
+	mkdir $baseFolder -p
+	
 	# Generates the custom client.ovpn
-	cp /etc/openvpn/client-common.txt ~/$1.ovpn
-	echo "<ca>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/ca.crt >> ~/$1.ovpn
-	echo "</ca>" >> ~/$1.ovpn
-	echo "<cert>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> ~/$1.ovpn
-	echo "</cert>" >> ~/$1.ovpn
-	echo "<key>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
-	echo "</key>" >> ~/$1.ovpn
+	touch "$baseFolder/$1.ovpn"
+	cp /etc/openvpn/client-common.txt "$baseFolder/$1.ovpn"
+	echo "<ca>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/ca.crt >> "$baseFolder/$1.ovpn"
+	echo "</ca>" >> "$baseFolder/$1.ovpn"
+	echo "<cert>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/issued/$1.crt >> "$baseFolder/$1.ovpn"
+	echo "</cert>" >> "$baseFolder/$1.ovpn"
+	echo "<key>" >> "$baseFolder/$1.ovpn"
+	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> "$baseFolder/$1.ovpn"
+	echo "</key>" >> "$baseFolder/$1.ovpn"
 }
 
 # Try to get our IP from the system and fallback to the Internet.
@@ -86,7 +97,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo ""
-			echo "Client $CLIENT added, certs available at ~/$CLIENT.ovpn"
+			echo "Client $CLIENT added, certs available at $baseFolder/$CLIENT.ovpn"
 			exit
 			;;
 			2)
@@ -367,6 +378,6 @@ verb 3" > /etc/openvpn/client-common.txt
 	echo ""
 	echo "Finished!"
 	echo ""
-	echo "Your client config is available at ~/$CLIENT.ovpn"
+	echo "Your client config is available at $baseFolder/$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
