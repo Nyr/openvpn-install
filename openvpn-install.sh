@@ -30,9 +30,11 @@ if grep -qs "CentOS release 5" "/etc/redhat-release"; then
 fi
 if [[ -e /etc/debian_version ]]; then
 	OS=debian
+	GROUPNAME=nogroup
 	RCLOCAL='/etc/rc.local'
 elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	OS=centos
+	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
@@ -118,6 +120,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf pki/issued/$CLIENT.crt
 			rm -rf /etc/openvpn/crl.pem
 			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
+			# CRL is read with each client connection, when OpenVPN is dropped to nobody
+			chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
 			exit
@@ -224,6 +228,8 @@ else
 	./easyrsa gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn
+	# CRL is read with each client connection, when OpenVPN is dropped to nobody
+	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Generate server.conf
@@ -271,6 +277,8 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 	esac
 	echo "keepalive 10 120
 comp-lzo
+user nobody
+group $GROUPNAME
 persist-key
 persist-tun
 status openvpn-status.log
