@@ -379,10 +379,6 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 	else
 		iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
 		sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE" $RCLOCAL
-		if ufw status | grep -qw active; then
-			sed -i '1s/^/##OPENVPN_START\n*nat\n:POSTROUTING ACCEPT [0:0]\n-A POSTROUTING -s 10.8.0.0\/24 -o eth0 -j MASQUERADE\nCOMMIT\n##OPENVPN_END\n\n/' /etc/ufw/before.rules
-			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT" #before ovpn: /g' /etc/default/ufw
-		fi
 	fi
 	if pgrep firewalld; then
 		# We don't use --add-service=openvpn because that would only work with
@@ -392,9 +388,16 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --zone=public --add-port=$PORT/udp
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
-	fi
-	if ufw status | grep -qw active; then
+		if [[ "$FORWARD_TYPE" = '1' ]]; then		
+			firewall-cmd --zone=trusted --add-masquerade
+			firewall-cmd --permanent --zone=trusted --add-masquerade
+		fi
+	elif ufw status | grep -qw active; then
 		ufw allow $PORT/udp
+		if [[ "$FORWARD_TYPE" = '1' ]]; then
+			sed -i '1s/^/##OPENVPN_START\n*nat\n:POSTROUTING ACCEPT [0:0]\n-A POSTROUTING -s 10.8.0.0\/24 -o eth0 -j MASQUERADE\nCOMMIT\n##OPENVPN_END\n\n/' /etc/ufw/before.rules
+			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT" #before ovpn: /g' /etc/default/ufw
+		fi
 	fi
 	if iptables -L | grep -qE 'REJECT|DROP'; then
 		# If iptables has at least one REJECT rule, we asume this is needed.
