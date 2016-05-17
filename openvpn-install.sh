@@ -134,6 +134,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			if [[ "$REMOVE" = 'y' ]]; then
 				PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
 				if ufw status | grep -qw active; then
+					ufw delete allow $PORT/udp
 					sed -i '/^##OPENVPN_START/,/^##OPENVPN_END/d' /etc/ufw/before.rules
 					sed -i 's/^DEFAULT_FORWARD_POLICY="ACCEPT" #before ovpn: /DEFAULT_FORWARD_POLICY=/g' /etc/default/ufw
 				fi
@@ -391,6 +392,9 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --zone=public --add-port=$PORT/udp
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
+	fi
+	if ufw status | grep -qw active; then
+		ufw allow $PORT/udp
 	fi
 	if iptables -L | grep -qE 'REJECT|DROP'; then
 		# If iptables has at least one REJECT rule, we asume this is needed.
