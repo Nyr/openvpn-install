@@ -466,7 +466,7 @@ persist-tun
 remote-cert-tls server
 cipher AES-256-CBC
 auth SHA512
-block-outside-dns
+setenv opt block-outside-dns
 tls-version-min 1.2
 tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
