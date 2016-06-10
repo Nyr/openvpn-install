@@ -133,12 +133,18 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
 			if [[ "$REMOVE" = 'y' ]]; then
 				PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
-				if pgrep firewalld; then
+				if ufw status | grep -qw active; then
+					ufw delete allow $PORT/udp
+					sed -i '/^##OPENVPN_START/,/^##OPENVPN_END/d' /etc/ufw/before.rules
+					sed -i '/^DEFAULT_FORWARD/{N;s/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before openvpn: /DEFAULT_FORWARD_POLICY=/}' /etc/default/ufw
+				elif pgrep firewalld; then
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --zone=public --remove-port=$PORT/udp
 					firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
 					firewall-cmd --permanent --zone=public --remove-port=$PORT/udp
 					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
+					firewall-cmd --zone=trusted --remove-masquerade
+					firewall-cmd --permanent --zone=trusted --remove-masquerade
 				fi
 				if iptables -L | grep -qE 'REJECT|DROP'; then
 					sed -i "/iptables -I INPUT -p udp --dport $PORT -j ACCEPT/d" $RCLOCAL
@@ -383,6 +389,16 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --zone=public --add-port=$PORT/udp
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
+		if [[ "$FORWARD_TYPE" = '1' ]]; then		
+			firewall-cmd --zone=trusted --add-masquerade
+			firewall-cmd --permanent --zone=trusted --add-masquerade
+		fi
+	elif ufw status | grep -qw active; then
+		ufw allow $PORT/udp
+		if [[ "$FORWARD_TYPE" = '1' ]]; then
+			sed -i '1s/^/##OPENVPN_START\n*nat\n:POSTROUTING ACCEPT [0:0]\n-A POSTROUTING -s 10.8.0.0\/24 -o eth0 -j MASQUERADE\nCOMMIT\n##OPENVPN_END\n\n/' /etc/ufw/before.rules
+			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before openvpn: /' /etc/default/ufw
+		fi
 	fi
 	if iptables -L | grep -qE 'REJECT|DROP'; then
 		# If iptables has at least one REJECT rule, we asume this is needed.
@@ -450,6 +466,7 @@ persist-tun
 remote-cert-tls server
 cipher AES-256-CBC
 auth SHA512
+setenv opt block-outside-dns
 tls-version-min 1.2
 tls-client" > /etc/openvpn/client-common.txt
 	if [[ "$VARIANT" = '1' ]]; then
