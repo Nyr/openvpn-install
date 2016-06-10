@@ -397,7 +397,7 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		ufw allow $PORT/udp
 		if [[ "$FORWARD_TYPE" = '1' ]]; then
 			sed -i '1s/^/##OPENVPN_START\n*nat\n:POSTROUTING ACCEPT [0:0]\n-A POSTROUTING -s 10.8.0.0\/24 -o eth0 -j MASQUERADE\nCOMMIT\n##OPENVPN_END\n\n/' /etc/ufw/before.rules
-			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before ovpn: /' /etc/default/ufw
+			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before openvpn: /' /etc/default/ufw
 		fi
 	fi
 	if iptables -L | grep -qE 'REJECT|DROP'; then
