@@ -136,7 +136,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				if ufw status | grep -qw active; then
 					ufw delete allow $PORT/udp
 					sed -i '/^##OPENVPN_START/,/^##OPENVPN_END/d' /etc/ufw/before.rules
-					sed -i 's/^DEFAULT_FORWARD_POLICY="ACCEPT" #before ovpn: /DEFAULT_FORWARD_POLICY=/g' /etc/default/ufw
+					sed -i '/^DEFAULT_FORWARD/{N;s/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before openvpn: /DEFAULT_FORWARD_POLICY=/}' /etc/default/ufw
 				elif pgrep firewalld; then
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --zone=public --remove-port=$PORT/udp
@@ -397,7 +397,7 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		ufw allow $PORT/udp
 		if [[ "$FORWARD_TYPE" = '1' ]]; then
 			sed -i '1s/^/##OPENVPN_START\n*nat\n:POSTROUTING ACCEPT [0:0]\n-A POSTROUTING -s 10.8.0.0\/24 -o eth0 -j MASQUERADE\nCOMMIT\n##OPENVPN_END\n\n/' /etc/ufw/before.rules
-			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT" #before ovpn: /g' /etc/default/ufw
+			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before ovpn: /' /etc/default/ufw
 		fi
 	fi
 	if iptables -L | grep -qE 'REJECT|DROP'; then
