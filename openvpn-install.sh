@@ -205,9 +205,10 @@ else
 	echo "What DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
 	echo "   2) FDN (recommended)"
-	echo "   3) OpenNIC (nearest servers)"
-	echo "   4) OpenDNS"
-	echo "   5) Google"
+	echo "   3) OpenNIC"
+	echo "   4) DNS.WATCH"
+	echo "   5) OpenDNS"
+	echo "   6) Google"
 	read -p "DNS [1-6]: " -e -i 2 DNS
 	echo ""
 	echo "Some setups (e.g. Amazon Web Services), require use of MASQUERADE rather than SNAT"
@@ -345,11 +346,15 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns1\"" >> /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns2\"" >> /etc/openvpn/server.conf
 		;;
-		4) #OpenDNS 
+		5) #DNS.WATCH 
+		echo 'push "dhcp-option DNS 84.200.69.80"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 84.200.70.40"' >> /etc/openvpn/server.conf
+		;;
+		5) #OpenDNS 
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
 		;;
-		5) #Google 
+		6) #Google 
 		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
 		;;
