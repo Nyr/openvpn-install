@@ -283,7 +283,7 @@ group $GROUPNAME
 persist-key
 persist-tun
 status openvpn-status.log
-verb 3
+verb 6
 crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	if [[ "$OS" = 'debian' ]]; then
