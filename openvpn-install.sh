@@ -346,7 +346,7 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns1\"" >> /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns2\"" >> /etc/openvpn/server.conf
 		;;
-		5) #DNS.WATCH 
+		4) #DNS.WATCH 
 		echo 'push "dhcp-option DNS 84.200.69.80"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 84.200.70.40"' >> /etc/openvpn/server.conf
 		;;
