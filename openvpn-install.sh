@@ -68,7 +68,14 @@ newclient () {
 # and to avoid getting an IPv6.
 IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 if [[ "$IP" = "" ]]; then
+	read -p "Can I search your ip on Internet ? (y|n) " search_ip
+	if [[ $search_ip = "y" ]]; then
 		IP=$(wget -qO- ipv4.icanhazip.com)
+	else
+		echo "So, I cannot continue without the server ip...
+		Exiting...";exit 0;
+	fi
+	unset search_ip
 fi
 
 
@@ -85,7 +92,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo ""
 			echo "Tell me a name for the client cert"
 			echo "Please, use one word only, no special characters"
@@ -126,9 +133,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 			echo ""
 			echo "Certificate for client $CLIENT revoked"
+			echo "Exiting..."
 			exit
 			;;
-			3) 
+			3)
 			echo ""
 			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
 			if [[ "$REMOVE" = 'y' ]]; then
@@ -192,7 +200,7 @@ else
 	while [[ $VARIANT !=  "1" && $VARIANT != "2" ]]; do
 		read -p "Variant [1-2]: " -e -i 1 VARIANT
 	done
-	
+
 	echo ""
 	echo "I need to know the IPv4 address of the network interface you want OpenVPN listening to."
 	echo "If you server is running behind a NAT, (e.g. LowEndSpirit, Scaleway) leave the IP adress as it is. (local/private IP"
@@ -220,8 +228,10 @@ else
 	done
 	echo ""
 	echo "Finally, tell me your name for the client cert"
-	echo "Please, use one word only, no special characters"
-	read -p "Client name: " -e -i client CLIENT
+	while [[ $CLIENT = "" ]]; do
+		echo "Please, use one word only, no special characters"
+		read -p "Client name: " -e -i client CLIENT
+	done
 	echo ""
 	echo "Okay, that was all I needed. We are ready to setup your OpenVPN server now"
 	read -n1 -r -p "Press any key to continue..."
@@ -266,7 +276,7 @@ else
 	else
         	NOGROUP=nobody
 	fi
-	
+
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
 		rm -rf /etc/openvpn/easy-rsa/
@@ -330,7 +340,7 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
-		1) 
+		1)
 		# Obtain the resolvers from resolv.conf and use them for OpenVPN
 		grep -v '#' /etc/resolv.conf | grep 'nameserver' | grep -E -o '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | while read line; do
 			echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server.conf
@@ -346,15 +356,15 @@ tls-version-min 1.2" > /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns1\"" >> /etc/openvpn/server.conf
 		echo "push \"dhcp-option DNS $ns2\"" >> /etc/openvpn/server.conf
 		;;
-		4) #DNS.WATCH 
+		4) #DNS.WATCH
 		echo 'push "dhcp-option DNS 84.200.69.80"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 84.200.70.40"' >> /etc/openvpn/server.conf
 		;;
-		5) #OpenDNS 
+		5) #OpenDNS
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
 		;;
-		6) #Google 
+		6) #Google
 		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
 		;;
@@ -394,7 +404,7 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --zone=public --add-port=$PORT/udp
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
-		if [[ "$FORWARD_TYPE" = '1' ]]; then		
+		if [[ "$FORWARD_TYPE" = '1' ]]; then
 			firewall-cmd --zone=trusted --add-masquerade
 			firewall-cmd --permanent --zone=trusted --add-masquerade
 		fi
@@ -489,3 +499,4 @@ tls-client" > /etc/openvpn/client-common.txt
 	echo "Your client config is available at ~/$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script another time!"
 fi
+exit 0;
