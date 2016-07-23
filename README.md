@@ -13,8 +13,6 @@ Once it ends, you can run it again to add more users, remove some of them or eve
 ###I want to run my own VPN but don't have a server for that
 You can get a little VPS for just $2.99/month at [Bandwagon Host](https://bandwagonhost.com/aff.php?aff=575&pid=12).
 
-If you don't care about sharing an IP address with more people, check out the awesome [LowEndSpirit](http://lowendspirit.com/) project too. They are providing IPv6 VPS with NATed IPv4 for only 3€/year.
-
 ###Donations
 
 If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [Bitcoin](https://www.coinbase.com/Nyr). Thanks!
