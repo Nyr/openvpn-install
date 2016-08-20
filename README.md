@@ -60,7 +60,7 @@ Each one has been test by myself.
 
 ##Installation
 
-**You have to enable the TUN module otherwise OpenVPN won't work.** Ask your host if you don't know how to do it.
+**You have to enable the TUN module otherwise OpenVPN won't work.** Ask your host if you don't know how to do it. If the TUN module is not enabled, the script will tell you.
 
 Run the script and follow the assistant:
 
