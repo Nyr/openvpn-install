@@ -4,7 +4,7 @@ OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29
 This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It isn't bulletproof but has been designed to be as unobtrusive and universal as possible.
 
 ##Fork
-This fork includes :
+This fork includes the following features :
 - No logs
 - No comp-lzo [compression is a vector for oracle attacks, e.g. CRIME or BREACH](https://github.com/BetterCrypto/Applied-Crypto-Hardening/pull/91#issuecomment-75388575)
 - Better encryption (see below)
@@ -59,6 +59,8 @@ The script is made to work on these OS :
 Each one has been test by myself.
 
 ##Installation
+
+**You have to enable the TUN module otherwise OpenVPN won't work.** Ask your host if you don't know how to do it.
 
 Run the script and follow the assistant:
 
