@@ -286,8 +286,8 @@ status openvpn-status.log
 verb 3
 crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
-	sed -i '/net.ipv4.ip_forward/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
-	if ! grep -q "net.ipv4.ip_forward" /etc/sysctl.conf; then
+	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
+	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
 		echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 	fi
 	# Avoid an unneeded reboot
