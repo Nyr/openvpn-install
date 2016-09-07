@@ -285,13 +285,11 @@ else
 	# If the user selected the fast, less hardened version
 	if [[ "$VARIANT" = '1' ]]; then
 		echo "set_var EASYRSA_KEY_SIZE 2048
-set_var EASYRSA_KEY_SIZE 2048
 set_var EASYRSA_DIGEST "sha256"" > vars
 	fi
 	# If the user selected the relatively slow, ultra hardened version
 	if [[ "$VARIANT" = '2' ]]; then
 		echo "set_var EASYRSA_KEY_SIZE 4096
-set_var EASYRSA_KEY_SIZE 4096
 set_var EASYRSA_DIGEST "sha384"" > vars
 	fi
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
