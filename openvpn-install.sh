@@ -260,8 +260,8 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
 		;;
 		3)
-		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
-		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 91.239.100.100"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 89.233.43.71"' >> /etc/openvpn/server.conf
 		;;
 		4) 
 		echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server.conf
