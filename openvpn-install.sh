@@ -191,7 +191,7 @@ else
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
 	echo "   6) Verisign"
-	echo "   7) CencurFriDNS.dk"
+	echo "   7) CensurFriDNS.dk"
 	read -p "DNS [1-7]: " -e -i 1 DNS
 	echo ""
 	echo "Finally, tell me your name for the client cert"
