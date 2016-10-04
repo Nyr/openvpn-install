@@ -367,15 +367,9 @@ crl-verify crl.pem
 tls-server
 tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
-	if [[ "$OS" = 'debian' ]]; then
-		sed -i 's|#net.ipv4.ip_forward=1|net.ipv4.ip_forward=1|' /etc/sysctl.conf
-	else
-		# CentOS 5 and 6
-		sed -i 's|net.ipv4.ip_forward = 0|net.ipv4.ip_forward = 1|' /etc/sysctl.conf
-		# CentOS 7
-		if ! grep -q "net.ipv4.ip_forward=1" "/etc/sysctl.conf"; then
-			echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-		fi
+	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
+	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
+		echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
 	fi
 	# Avoid an unneeded reboot
 	echo 1 > /proc/sys/net/ipv4/ip_forward
