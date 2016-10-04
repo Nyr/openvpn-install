@@ -147,7 +147,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					firewall-cmd --zone=trusted --remove-masquerade
 					firewall-cmd --permanent --zone=trusted --remove-masquerade
 				fi
-				if iptables -L | grep -qE 'REJECT|DROP'; then
+				if iptables -L -n | grep -qE 'REJECT|DROP'; then
 					sed -i "/iptables -I INPUT -p udp --dport $PORT -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
@@ -406,7 +406,7 @@ tls-auth tls-auth.key 0" >> /etc/openvpn/server.conf
 			sed -ie 's/^DEFAULT_FORWARD_POLICY\s*=\s*/DEFAULT_FORWARD_POLICY="ACCEPT"\n#before openvpn: /' /etc/default/ufw
 		fi
 	fi
-	if iptables -L | grep -qE 'REJECT|DROP'; then
+	if iptables -L -n | grep -qE 'REJECT|DROP'; then
 		# If iptables has at least one REJECT rule, we asume this is needed.
 		# Not the best approach but I can't think of other and this shouldn't
 		# cause problems.
