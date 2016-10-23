@@ -3,6 +3,8 @@ OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29
 
 This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It isn't bulletproof but has been designed to be as unobtrusive and universal as possible.
 
+![](https://lut.im/xtTrl1R4if/j3j16qgomoL9JH9B)
+
 ##Fork
 This fork includes the following features :
 - No logs
@@ -72,6 +74,7 @@ chmod +x openvpn-install.sh
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
+![](https://lut.im/Z8xfJ8WqyO/3JoPmJK8VRp6zwOE)
 
 You can get a cheap VPS for 3€/month at [PulseHeberg](https://goo.gl/oBhgaj).
 
