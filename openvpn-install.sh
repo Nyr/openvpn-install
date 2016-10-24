@@ -32,7 +32,7 @@ if [[ -e /etc/debian_version ]]; then
 	OS=debian
 	GROUPNAME=nogroup
 	RCLOCAL='/etc/rc.local'
-elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+elif [[ -e /etc/centos-release || -e /etc/redhat-release || -z $(cut -d= /etc/os-release | grep rhel-fedora) ]]; then
 	OS=centos
 	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
