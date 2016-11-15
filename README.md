@@ -1,12 +1,24 @@
 ##openvpn-install
 OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian, Ubuntu and CentOS.
 
-This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It isn't bulletproof but has been designed to be as unobtrusive and universal as possible.
+This script will let you setup your own secure VPN server in no more than a minute.
 
 ![](https://lut.im/xtTrl1R4if/j3j16qgomoL9JH9B)
 
 ##Fork
+
+This script is based on the great work of [Nyr and its contributors](https://github.com/Nyr/openvpn-install), big thanks to them.
+
+I made it because I wanted to have a more secured OpenVPN out-of-the-box. It works like the original script, but is more focused on privacy and espicially better encryption. Nyr's original script uses mainly default parameters regarding encryption, but you can do a lot better with the latest versions of OpenVPN and have nearly state-of-the-art encryption.
+
+The only drawback is that you need to use a recent version of OpenVPN. Therefore I restrain the compatibility of this script to a few but widely used GNU/Linux distributions, to get a recent version of OpenVPN from trusted third-party repositories. 
+
+I you want to use an OpenVPN server installed with this script with an old client (>2.3), it won't be compatible. If you can't upgrade your client, use Nyr's script.
+
+### Features
+
 This fork includes the following features :
+- Every feature of the [original script](https://github.com/Nyr/openvpn-install)
 - No logs
 - No comp-lzo [compression is a vector for oracle attacks, e.g. CRIME or BREACH](https://github.com/BetterCrypto/Applied-Crypto-Hardening/pull/91#issuecomment-75388575)
 - Better encryption (see below)
@@ -22,8 +34,6 @@ This fork includes the following features :
 - [DNS.WATCH DNS Servers](https://dns.watch/index)
 - Up-to-date OpenVPN (2.3.11) thanks to [EPEL](http://fedoraproject.org/wiki/EPEL) and [swupdate.openvpn.net](https://community.openvpn.net/openvpn/wiki/OpenvpnSoftwareRepos)
 - Support for either SNAT or MASQUERADE for forwarding
-- Every feature of the [original script](https://github.com/Nyr/openvpn-install) (I check periodically to sync the latest commits from source)
-
 ## Variants
 
 When you lauch the script you will be asked to choose a mode. Both will work the same way, but *slow* has higher encryption settings, so it may slow down your connection and take more time to install.
@@ -57,8 +67,6 @@ The script is made to work on these OS :
 - Ubuntu 16.10
 - CentOS 6
 - CentOS 7
-
-Each one has been test by myself.
 
 ##Installation
 
