@@ -111,7 +111,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			else
 				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
 			fi
-			if [[ "$CLIENTNUMBER" -ge 1 -a "$CLIENTNUMBER" -le $NUMBEROFCLIENTS ]]; then
+			if [[ "$CLIENTNUMBER" =~ ^[0-9]+$ ]] && [[ "$CLIENTNUMBER" -ge 1 ]] && [[ "$CLIENTNUMBER" -le $NUMBEROFCLIENTS ]]; then
 				CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 				cd /etc/openvpn/easy-rsa/
 				./easyrsa --batch revoke $CLIENT
