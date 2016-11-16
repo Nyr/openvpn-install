@@ -127,7 +127,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				echo "Certificate for client $CLIENT revoked"
 			else
 				echo ""
-				echo "You selected a invalid client!"
+				echo "You selected an invalid client!"
 				exit 7
 			fi
 			exit
