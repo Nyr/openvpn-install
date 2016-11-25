@@ -276,7 +276,10 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
-cipher AES-128-CBC
+cipher AES-256-CBC
+auth SHA512
+tls-version-min 1.2
+tls-cipher TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384
 comp-lzo
 user nobody
 group $GROUPNAME
@@ -369,8 +372,11 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
-cipher AES-128-CBC
+cipher AES-256-CBC
+auth SHA512
 comp-lzo
+tls-version-min 1.2
+tls-cipher TLS-ECDHE-RSA-WITH-AES-256-GCM-SHA384
 setenv opt block-outside-dns
 key-direction 1
 verb 3" > /etc/openvpn/client-common.txt
