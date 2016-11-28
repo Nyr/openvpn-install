@@ -38,7 +38,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	RCLOCAL='/etc/rc.d/rc.local'
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
-else
+elif [[ -e /usr/bin/pacman ]]; then
 	#Else, OS is Arch 
 	OS=arch
 	GROUPNAME=nobody
@@ -161,7 +161,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
 				elif [[ "$OS" = 'centos' ]]; then
 					yum remove openvpn -y
-				elif [[ "$OS" = 'arch' ]]; then
+				else
 					pacman -Rs openvpn --noconfirm
 				fi
 				rm -rf /etc/openvpn
