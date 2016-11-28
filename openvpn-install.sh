@@ -162,7 +162,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				elif [[ "$OS" = 'centos' ]]; then
 					yum remove openvpn -y
 				else
-					pacman -Rs openvpn --noconfirm
+					pacman -Rs openvpn networkmanager-openvpn --noconfirm
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
