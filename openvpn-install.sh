@@ -181,10 +181,15 @@ else
 	echo "listening to."
 	read -p "IP address: " -e -i $IP IP
 	echo ""
-	echo "What port do you want for OpenVPN?"
+	echo "Which protocol do you want for OpenVPN connections?"
+	echo "   1) UDP (recommended)"
+	echo "   2) TCP"
+	read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
+	echo ""
+	echo "What port do you want OpenVPN listening to?"
 	read -p "Port: " -e -i 1194 PORT
 	echo ""
-	echo "What DNS do you want to use with the VPN?"
+	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
 	echo "   2) Google"
 	echo "   3) OpenDNS"
@@ -233,9 +238,16 @@ else
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Generate server.conf
-	echo "port $PORT
-proto udp
-dev tun
+	echo "port $PORT" > /etc/openvpn/server.conf
+	case $PROTOCOL in
+		1) 
+		echo "proto udp" >> /etc/openvpn/server.conf
+		;;
+		2) 
+		echo "proto tcp" >> /etc/openvpn/server.conf
+		;;
+	esac
+	echo "dev tun
 sndbuf 0
 rcvbuf 0
 ca ca.crt
@@ -245,7 +257,7 @@ dh dh.pem
 tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
@@ -359,9 +371,16 @@ crl-verify crl.pem" >> /etc/openvpn/server.conf
 	fi
 	# client-common.txt is created so we have a template to add further users later
 	echo "client
-dev tun
-proto udp
-sndbuf 0
+dev tun" > /etc/openvpn/client-common.txt
+	case $PROTOCOL in
+		1) 
+		echo "proto udp" >> /etc/openvpn/client-common.txt
+		;;
+		2) 
+		echo "proto tcp" >> /etc/openvpn/client-common.txt
+		;;
+	esac
+	echo "sndbuf 0
 rcvbuf 0
 remote $IP $PORT
 resolv-retry infinite
@@ -373,7 +392,7 @@ cipher AES-256-CBC
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
-verb 3" > /etc/openvpn/client-common.txt
+verb 3" >> /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
