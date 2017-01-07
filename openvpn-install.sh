@@ -1,7 +1,7 @@
 #!/bin/bash
-# OpenVPN road warrior installer for Debian, Ubuntu and CentOS
+# OpenVPN road warrior installer for Debian, Ubuntu, CentOS, and ArchLinux.
 
-# This script will work on Debian, Ubuntu, CentOS and probably other distros
+# This script will work on Debian, Ubuntu, CentOS, Arch and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
 # your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
@@ -38,8 +38,15 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	RCLOCAL='/etc/rc.d/rc.local'
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
+elif [[ -e /etc/arch-release ]]; then
+	OS=arch
+	GROUPNAME=nobody
+	RCLOCAL='/etc/iptables/iptables.rules'
+	if [[ ! -e RCLOCAL ]]; then
+		touch $RCLOCAL
+	fi
 else
-	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
+	echo "Looks like you aren't running this installer on a Debian, Ubuntu, CentOS, or ArchLinux system"
 	exit 5
 fi
 
@@ -151,10 +158,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 						fi
 					fi
 				fi
-				if [[ "$OS" = 'debian' ]]; then
+			if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
-				else
+				elif [[ "$OS" = 'centos' ]]; then
 					yum remove openvpn -y
+				elif [[ "$OS" = 'arch' ]]; then
+					pacman -R --noconfirm openvpn
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
@@ -189,6 +198,10 @@ else
 	echo "What port do you want OpenVPN listening to?"
 	read -p "Port: " -e -i 1194 PORT
 	echo ""
+	echo ""
+	echo "What keylength do you want for OpenVPN?"
+	read -p "Keylength: " -e -i 4096 KEYLENGTH
+	echo ""
 	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
 	echo "   2) Google"
@@ -207,10 +220,12 @@ else
 		if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
-	else
+	elif [[ "$OS" = 'centos' ]]; then
 		# Else, the distro is CentOS
 		yum install epel-release -y
 		yum install openvpn iptables openssl wget ca-certificates -y
+	elif [[ "$OS" = 'arch' ]]; then
+		pacman -S openvpn iptables openssl wget ca-certificates-{cacert,mozilla,utils} --needed --noconfirm
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
@@ -223,6 +238,20 @@ else
 	mv /etc/openvpn/EasyRSA-3.0.1/ /etc/openvpn/easy-rsa/
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -rf ~/EasyRSA-3.0.1.tgz
+		# Set vars
+	if [[ ! -e /etc/openvpn/easy-rsa/vars ]];then
+		cat > /etc/openvpn/easy-rsa/vars << EOF
+set_var EASYRSA_KEY_SIZE $KEYLENGTH
+set_var EASYRSA_DIGEST "sha512"
+set_var EASYRSA_CA_EXPIRE 365
+set_var EASYRSA_REQ_COUNTRY ""
+set_var EASYRSA_REQ_PROVINCE ""
+set_var EASYRSA_REQ_CITY ""
+set_var EASYRSA_REQ_ORG ""
+set_var EASYRSA_REQ_EMAIL ""
+set_var EASYRSA_REQ_OU  ""
+EOF
+	fi
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
