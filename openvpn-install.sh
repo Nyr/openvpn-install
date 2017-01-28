@@ -132,6 +132,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			if [[ "$REMOVE" = 'y' ]]; then
 				PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
 				PROTOCOL=$(grep '^proto ' /etc/openvpn/server.conf | cut -d " " -f 2)
+				IP=$(grep 'iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to ' $RCLOCAL | cut -d " " -f 11)
 				if pgrep firewalld; then
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --zone=public --remove-port=$PORT/$PROTOCOL
@@ -139,11 +140,15 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					firewall-cmd --permanent --zone=public --remove-port=$PORT/$PROTOCOL
 					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
 				fi
-				if iptables -L -n | grep -qE 'REJECT|DROP'; then
+				if iptables -L -n | grep -qE 'REJECT|DROP|ACCEPT'; then
+					iptables -D INPUT -p $PROTOCOL --dport $PORT -j ACCEPT
+					iptables -D FORWARD -s 10.8.0.0/24 -j ACCEPT
+					iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 					sed -i "/iptables -I INPUT -p $PROTOCOL --dport $PORT -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
 					sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 				fi
+				iptables -t nat -D POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP
 				sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
 				if hash sestatus 2>/dev/null; then
 					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
