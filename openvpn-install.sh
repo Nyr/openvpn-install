@@ -1,10 +1,10 @@
 #!/bin/bash
-# OpenVPN road warrior installer for Debian, Ubuntu and CentOS
+# OpenVPN road warrior installer for Debian/Ubuntu,CentOS and Arch 
 
 # This script will work on Debian, Ubuntu, CentOS and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
-# your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
+# your Debian/CentOS/Arch box. It has been designed to be as unobtrusive and
 # universal as possible.
 
 
@@ -38,6 +38,12 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	RCLOCAL='/etc/rc.d/rc.local'
 	# Needed for CentOS 7
 	chmod +x /etc/rc.d/rc.local
+elif [[ -e /usr/bin/pacman ]]; then
+	#Else, OS is Arch 
+	OS=arch
+	GROUPNAME=nobody
+	RCLOCAL='/etc/rc.local'
+
 else
 	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
 	exit 5
@@ -159,8 +165,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				fi
 				if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
-				else
+				elif [[ "$OS" = 'centos' ]]; then
 					yum remove openvpn -y
+				else
+					pacman -Rs openvpn networkmanager-openvpn --noconfirm
 				fi
 				rm -rf /etc/openvpn
 				rm -rf /usr/share/doc/openvpn*
@@ -221,10 +229,12 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
-	else
-		# Else, the distro is CentOS
+	elif [[ "$OS" = 'centos' ]]; then
 		yum install epel-release -y
 		yum install openvpn iptables openssl wget ca-certificates -y
+	else
+		#Arch
+		pacman -S openvpn iptables openssl wget ca-certificates --noconfirm
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
