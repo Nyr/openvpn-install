@@ -63,7 +63,7 @@ newclient () {
 # and to avoid getting an IPv6.
 IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -o -E '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 if [[ "$IP" = "" ]]; then
-		IP=$(wget -qO- ipv4.icanhazip.com)
+		IP=$(wget -4qO- "http://whatismyip.akamai.com/")
 fi
 
 if [[ -e /etc/openvpn/server.conf ]]; then
@@ -73,15 +73,15 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "Looks like OpenVPN is already installed"
 		echo ""
 		echo "What do you want to do?"
-		echo "   1) Add a cert for a new user"
-		echo "   2) Revoke existing user cert"
+		echo "   1) Add a new user"
+		echo "   2) Revoke an existing user"
 		echo "   3) Remove OpenVPN"
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
 			1) 
 			echo ""
-			echo "Tell me a name for the client cert"
+			echo "Tell me a name for the client certificate"
 			echo "Please, use one word only, no special characters"
 			read -p "Client name: " -e -i client CLIENT
 			cd /etc/openvpn/easy-rsa/
@@ -210,7 +210,7 @@ else
 	echo "   6) Verisign"
 	read -p "DNS [1-6]: " -e -i 1 DNS
 	echo ""
-	echo "Finally, tell me your name for the client cert"
+	echo "Finally, tell me your name for the client certificate"
 	echo "Please, use one word only, no special characters"
 	read -p "Client name: " -e -i client CLIENT
 	echo ""
@@ -229,7 +229,7 @@ else
 		rm -rf /etc/openvpn/easy-rsa/
 	fi
 	# Get easy-rsa
-	wget -O ~/EasyRSA-3.0.1.tgz https://github.com/OpenVPN/easy-rsa/releases/download/3.0.1/EasyRSA-3.0.1.tgz
+	wget -O ~/EasyRSA-3.0.1.tgz "https://github.com/OpenVPN/easy-rsa/releases/download/3.0.1/EasyRSA-3.0.1.tgz"
 	tar xzf ~/EasyRSA-3.0.1.tgz -C ~/
 	mv ~/EasyRSA-3.0.1/ /etc/openvpn/
 	mv /etc/openvpn/EasyRSA-3.0.1/ /etc/openvpn/easy-rsa/
@@ -320,8 +320,8 @@ exit 0' > $RCLOCAL
 	sed -i "1 a\iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -j SNAT --to $IP" $RCLOCAL
 	if pgrep firewalld; then
 		# We don't use --add-service=openvpn because that would only work with
-		# the default port. Using both permanent and not permanent rules to
-		# avoid a firewalld reload.
+		# the default port and protocol. Using both permanent and not permanent
+		# rules to avoid a firewalld reload.
 		firewall-cmd --zone=public --add-port=$PORT/$PROTOCOL
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
 		firewall-cmd --permanent --zone=public --add-port=$PORT/$PROTOCOL
@@ -338,7 +338,7 @@ exit 0' > $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
 		sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
 	fi
-	# If SELinux is enabled and a custom port was selected, we need this
+	# If SELinux is enabled and a custom port or TCP was selected, we need this
 	if hash sestatus 2>/dev/null; then
 		if sestatus | grep "Current mode" | grep -qs "enforcing"; then
 			if [[ "$PORT" != '1194' || "$PROTOCOL" = 'tcp' ]]; then
@@ -368,7 +368,7 @@ exit 0' > $RCLOCAL
 		fi
 	fi
 	# Try to detect a NATed connection and ask about it to potential LowEndSpirit users
-	EXTERNALIP=$(wget -qO- ipv4.icanhazip.com)
+	EXTERNALIP=$(wget -4qO- "http://whatismyip.akamai.com/")
 	if [[ "$IP" != "$EXTERNALIP" ]]; then
 		echo ""
 		echo "Looks like your server is behind a NAT!"
@@ -403,5 +403,5 @@ verb 3" > /etc/openvpn/client-common.txt
 	echo "Finished!"
 	echo ""
 	echo "Your client configuration is available at" ~/"$CLIENT.ovpn"
-	echo "If you want to add more clients, you simply need to run this script another time!"
+	echo "If you want to add more clients, you simply need to run this script again!"
 fi
