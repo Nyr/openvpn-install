@@ -1,7 +1,7 @@
 #!/bin/bash
-# OpenVPN road warrior installer for Debian, Ubuntu and CentOS
+# OpenVPN road warrior installer for Debian, Ubuntu, openSUSE and CentOS
 
-# This script will work on Debian, Ubuntu, CentOS and probably other distros
+# This script will work on Debian, Ubuntu, openSUSE, CentOS and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
 # your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
@@ -36,8 +36,12 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	OS=centos
 	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
+elif [[ -e /etc/SuSE-release ]]; then
+  OS=opensuse
+  GROUPNAME=nobody
+  RCLOCAL='/etc/rc.d/rc.local'
 else
-	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
+	echo "Looks like you aren't running this installer on a Debian, Ubuntu, openSUSE or CentOS system"
 	exit 5
 fi
 
@@ -161,6 +165,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				fi
 				if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn openvpn-blacklist
+        elif [[ "$OS" = 'opensuse' ]]; then
+          echo "openSUSE OS detected"
+          zypper rm -y openvpn
 				else
 					yum remove openvpn -y
 				fi
@@ -223,6 +230,8 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
+  elif [[ "$OS" = 'opensuse' ]]; then
+    zypper install -y openvpn
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
