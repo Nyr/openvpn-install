@@ -20,7 +20,8 @@ if [[ "$EUID" -ne 0 ]]; then
 fi
 
 if [[ ! -e /dev/net/tun ]]; then
-	echo "TUN is not available"
+	echo "The TUN device is not available
+You need to enable TUN before running this script"
 	exit 3
 fi
 
@@ -37,7 +38,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
 else
-	echo "Looks like you aren't running this installer on a Debian, Ubuntu or CentOS system"
+	echo "Looks like you aren't running this installer on Debian, Ubuntu or CentOS"
 	exit 5
 fi
 
