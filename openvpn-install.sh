@@ -264,6 +264,7 @@ ca ca.crt
 cert server.crt
 key server.key
 dh dh.pem
+auth SHA512
 tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
@@ -402,6 +403,7 @@ nobind
 persist-key
 persist-tun
 remote-cert-tls server
+auth SHA512
 cipher AES-256-CBC
 comp-lzo
 setenv opt block-outside-dns
