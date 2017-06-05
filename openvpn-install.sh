@@ -110,19 +110,25 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			else
 				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
 			fi
-			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
-			cd /etc/openvpn/easy-rsa/
-			./easyrsa --batch revoke $CLIENT
-			./easyrsa gen-crl
-			rm -rf pki/reqs/$CLIENT.req
-			rm -rf pki/private/$CLIENT.key
-			rm -rf pki/issued/$CLIENT.crt
-			rm -rf /etc/openvpn/crl.pem
-			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
-			# CRL is read with each client connection, when OpenVPN is dropped to nobody
-			chown nobody:$GROUPNAME /etc/openvpn/crl.pem
-			echo ""
-			echo "Certificate for client $CLIENT revoked"
+			if [[ "$CLIENTNUMBER" =~ ^[0-9]+$ ]] && [[ "$CLIENTNUMBER" -ge 1 ]] && [[ "$CLIENTNUMBER" -le $NUMBEROFCLIENTS ]]; then
+				CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
+				cd /etc/openvpn/easy-rsa/
+				./easyrsa --batch revoke $CLIENT
+				./easyrsa gen-crl
+				rm -rf pki/reqs/$CLIENT.req
+				rm -rf pki/private/$CLIENT.key
+				rm -rf pki/issued/$CLIENT.crt
+				rm -rf /etc/openvpn/crl.pem
+				cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
+				# CRL is read with each client connection, when OpenVPN is dropped to nobody
+				chown nobody:$GROUPNAME /etc/openvpn/crl.pem
+				echo ""
+				echo "Certificate for client $CLIENT revoked"
+			else
+				echo ""
+				echo "You selected an invalid client!"
+				exit 7
+			fi
 			exit
 			;;
 			3) 
