@@ -59,6 +59,18 @@ newclient () {
 	echo "</tls-auth>" >> ~/$1.ovpn
 }
 
+transfer() {
+	tmpfile=$( mktemp -t transferXXX )
+	if tty -s; then
+		basefile=$(basename "$1" | sed -e 's/[^a-zA-Z0-9._-]/-/g')
+		curl --progress-bar --upload-file "$1" "https://transfer.sh/$basefile" >> $tmpfile
+	else
+		curl --progress-bar --upload-file "-" "https://transfer.sh/$1" >> $tmpfile
+	fi
+	cat $tmpfile
+	rm -f $tmpfile
+}
+
 # Try to get our IP from the system and fallback to the Internet.
 # I do this to make the script compatible with NATed servers (lowendspirit.com)
 # and to avoid getting an IPv6.
@@ -91,6 +103,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			newclient "$CLIENT"
 			echo ""
 			echo "Client $CLIENT added, configuration is available at" ~/"$CLIENT.ovpn"
+			echo "You can also download it from the following address"
+			transfer "$CLIENT.ovpn"
 			exit
 			;;
 			2)
@@ -223,11 +237,11 @@ else
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		apt-get install openvpn iptables openssl ca-certificates curl -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl wget ca-certificates -y
+		yum install openvpn iptables openssl wget ca-certificates curl -y
 	fi
 	# An old version of easy-rsa was available by default in some openvpn packages
 	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
@@ -415,5 +429,7 @@ verb 3" > /etc/openvpn/client-common.txt
 	echo "Finished!"
 	echo ""
 	echo "Your client configuration is available at" ~/"$CLIENT.ovpn"
+	echo "You can also download it from the following address"
+	transfer "$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
