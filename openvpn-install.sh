@@ -33,7 +33,7 @@ if [[ -e /etc/debian_version ]]; then
 	OS=debian
 	GROUPNAME=nogroup
 	RCLOCAL='/etc/rc.local'
-elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+elif [[ -e /etc/centos-release || -e /etc/redhat-release || -e /etc/yum.repos.d/amzn-main.repo ]]; then
 	OS=centos
 	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
