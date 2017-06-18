@@ -8,6 +8,12 @@
 # universal as possible.
 
 
+if grep -qs "9.0" /etc/debian_version; then
+	echo "Debian 9.0 is not supported yet
+The installer will be compatible within the next few days"
+	exit 7
+fi
+
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -qs "dash"; then
 	echo "This script needs to be run with bash, not sh"
