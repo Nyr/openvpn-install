@@ -400,13 +400,16 @@ remote $IP $PORT
 resolv-retry infinite
 nobind
 persist-key
-persist-tun
 remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
+script-security 2
+up /etc/openvpn/update-resolv-conf
+down /etc/openvpn/update-resolv-conf
+keepalive 30 60
 verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
