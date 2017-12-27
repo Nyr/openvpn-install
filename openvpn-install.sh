@@ -1,7 +1,7 @@
 #!/bin/bash
 # OpenVPN road warrior installer for Debian, Ubuntu and CentOS
 
-# This script will work on Debian, Ubuntu, CentOS and probably other distros
+# This script will work on Debian, Raspbian, Ubuntu, CentOS and probably other distros
 # of the same families, although no support is offered for them. It isn't
 # bulletproof but it will probably work if you simply want to setup a VPN on
 # your Debian/Ubuntu/CentOS box. It has been designed to be as unobtrusive and
@@ -212,7 +212,14 @@ else
 	echo "   4) NTT"
 	echo "   5) Hurricane Electric"
 	echo "   6) Verisign"
-	read -p "DNS [1-6]: " -e -i 1 DNS
+	echo "   7) Own"
+
+	read -p "DNS [1-7]: " -e -i 1 DNS
+
+	if [ $DNS = "7" ]; then
+		read -p "Type in your DNS: " OWNDNS
+	fi
+
 	echo ""
 	echo "Finally, tell me your name for the client certificate"
 	echo "Please, use one word only, no special characters"
@@ -299,6 +306,10 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.64.6"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
+		7)
+		echo 'push "dhcp-option DNS '$OWNDNS'"' >> /etc/openvpn/server.conf
+		;;
+		
 	esac
 	echo "keepalive 10 120
 cipher AES-256-CBC
