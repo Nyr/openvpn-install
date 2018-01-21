@@ -233,15 +233,12 @@ else
 		rm -rf /etc/openvpn/easy-rsa/
 	fi
 	# Get easy-rsa
-	wget -O ~/EasyRSA-3.0.3.tgz "https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.3/EasyRSA-3.0.3.tgz"
-	tar xzf ~/EasyRSA-3.0.3.tgz -C ~/
-	# Temporal fix for issue #353, which is caused by OpenVPN/easy-rsa#135
-	# Will be removed as soon as a new release of easy-rsa is available
-	sed -i 's/\[\[/\[/g;s/\]\]/\]/g;s/==/=/g' ~/EasyRSA-3.0.3/easyrsa
-	mv ~/EasyRSA-3.0.3/ /etc/openvpn/
-	mv /etc/openvpn/EasyRSA-3.0.3/ /etc/openvpn/easy-rsa/
+	wget -O ~/EasyRSA-3.0.4.tgz "https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz"
+	tar xzf ~/EasyRSA-3.0.4.tgz -C ~/
+	mv ~/EasyRSA-3.0.4/ /etc/openvpn/
+	mv /etc/openvpn/EasyRSA-3.0.4/ /etc/openvpn/easy-rsa/
 	chown -R root:root /etc/openvpn/easy-rsa/
-	rm -rf ~/EasyRSA-3.0.3.tgz
+	rm -rf ~/EasyRSA-3.0.4.tgz
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
