@@ -110,6 +110,18 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			else
 				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
 			fi
+			#check if selected client does exist
+			if [[ !("$CLIENTNUMBER" =~ ^[0-9]+$) ]]; then
+				echo ""
+				echo "error: please enter a valid number!" 
+				exit
+			fi
+			if [[ "$CLIENTNUMBER" < "1" || "$CLIENTNUMBER" > "$NUMBEROFCLIENTS" || ${#CLIENTNUMBER} != ${#NUMBEROFCLIENTS} ]]; then
+				echo ""
+				echo "error: could not find client number $CLIENTNUMBER."
+				exit
+			fi
+			echo "INPUT: $CLIENTNUMBER"
 			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa --batch revoke $CLIENT
