@@ -94,7 +94,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			exit
 			;;
 			2)
-			# This option could be documented a bit better and maybe even be simplimplified
+			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
