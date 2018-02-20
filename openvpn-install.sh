@@ -75,7 +75,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo ""
 		echo "What do you want to do?"
 		echo "   1) Add a new user"
-		echo "   2) Revoke an existing user"
+		echo "   2) Show and revoke existing users"
 		echo "   3) Remove OpenVPN"
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
@@ -94,7 +94,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			exit
 			;;
 			2)
-			# This option could be documented a bit better and maybe even be simplimplified
+			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
@@ -106,9 +106,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Select the existing client certificate you want to revoke"
 			tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
 			if [[ "$NUMBEROFCLIENTS" = '1' ]]; then
-				read -p "Select one client [1]: " CLIENTNUMBER
+				read -p "Select one client [1] or 'x' to exit: " CLIENTNUMBER
 			else
-				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
+				read -p "Select one client [1-$NUMBEROFCLIENTS] or 'x' to exit: " CLIENTNUMBER
+			fi
+			if [[ "$CLIENTNUMBER" = 'x' ]]; then
+				exit
 			fi
 			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
 			cd /etc/openvpn/easy-rsa/
