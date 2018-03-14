@@ -304,7 +304,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.64.6"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
-		5) 
+		7) 
 		echo 'push "dhcp-option DNS 9.9.9.9"' >> /etc/openvpn/server.conf
 		;;
 	esac
