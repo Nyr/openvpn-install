@@ -94,7 +94,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			exit
 			;;
 			2)
-			# This option could be documented a bit better and maybe even be simplimplified
+			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			NUMBEROFCLIENTS=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep -c "^V")
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
@@ -207,12 +207,11 @@ else
 	echo ""
 	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
-	echo "   2) Google"
-	echo "   3) OpenDNS"
-	echo "   4) NTT"
-	echo "   5) Hurricane Electric"
-	echo "   6) Verisign"
-	read -p "DNS [1-6]: " -e -i 1 DNS
+	echo "   2) 1.1.1.1"
+	echo "   3) Google"
+	echo "   4) OpenDNS"
+	echo "   5) Verisign"
+	read -p "DNS [1-5]: " -e -i 1 DNS
 	echo ""
 	echo "Finally, tell me your name for the client certificate"
 	echo "Please, use one word only, no special characters"
@@ -271,7 +270,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
-		1) 
+		1)
 		# Locate the proper resolv.conf
 		# Needed for systems running systemd-resolved
 		if grep -q "127.0.0.53" "/etc/resolv.conf"; then
@@ -284,22 +283,19 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 			echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server.conf
 		done
 		;;
-		2) 
+		2)
+		echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server.conf
+		echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server.conf
+		;;
+		3)
 		echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server.conf
 		;;
-		3)
+		4)
 		echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server.conf
 		;;
-		4) 
-		echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server.conf
-		echo 'push "dhcp-option DNS 129.250.35.251"' >> /etc/openvpn/server.conf
-		;;
-		5) 
-		echo 'push "dhcp-option DNS 74.82.42.42"' >> /etc/openvpn/server.conf
-		;;
-		6) 
+		5)
 		echo 'push "dhcp-option DNS 64.6.64.6"' >> /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
