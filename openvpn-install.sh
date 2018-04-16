@@ -384,13 +384,13 @@ exit 0' > $RCLOCAL
 	EXTERNALIP=$(wget -4qO- "http://whatismyip.akamai.com/")
 	if [[ "$IP" != "$EXTERNALIP" ]]; then
 		echo ""
-		echo "Looks like your server is behind a NAT!"
+		echo "Looks like your server could be behind a NAT!"
 		echo ""
-		echo "If your server is NATed (e.g. LowEndSpirit), I need to know the external IP"
+		echo "If your server is behind a NAT, I need to know the public IP or hostname"
 		echo "If that's not the case, just ignore this and leave the next field blank"
-		read -p "External IP: " -e USEREXTERNALIP
-		if [[ "$USEREXTERNALIP" != "" ]]; then
-			IP=$USEREXTERNALIP
+		read -p "Public IP: " -e PUBLICIP
+		if [[ "$PUBLICIP" != "" ]]; then
+			IP=$PUBLICIP
 		fi
 	fi
 	# client-common.txt is created so we have a template to add further users later
