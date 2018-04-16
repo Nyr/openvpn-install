@@ -386,7 +386,7 @@ exit 0' > $RCLOCAL
 		echo ""
 		echo "Looks like your server is behind a NAT!"
 		echo ""
-		echo "If your server is NATed (e.g. LowEndSpirit), I need to know the external IP"
+		echo "If your server is NATed (e.g. LowEndSpirit), I need to know the external IP or hostname"
 		echo "If that's not the case, just ignore this and leave the next field blank"
 		read -p "External IP: " -e USEREXTERNALIP
 		if [[ "$USEREXTERNALIP" != "" ]]; then
