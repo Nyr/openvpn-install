@@ -1,6 +1,8 @@
 ## openvpn-install
 OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian and Ubuntu with OTP authentication.
 
+This repository has been forked from https://github.com/Nyr/openvpn-install and added OTP login functionality.
+
 ### Installation
 Run the script and follow the assistant:
 
