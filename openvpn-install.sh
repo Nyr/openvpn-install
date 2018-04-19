@@ -57,6 +57,9 @@ newclient () {
 	echo "<tls-auth>" >> ~/$1.ovpn
 	cat /etc/openvpn/ta.key >> ~/$1.ovpn
 	echo "</tls-auth>" >> ~/$1.ovpn
+        useradd $1
+        google-authenticator -t -d -r3 -R30 -f -l $1-vpn -s /etc/openvpn/google-authenticator/$1
+        chown gauth. /etc/openvpn/google-authenticator/$1
 }
 
 # Try to get our IP from the system and fallback to the Internet.
@@ -118,6 +121,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			rm -rf pki/private/$CLIENT.key
 			rm -rf pki/issued/$CLIENT.crt
 			rm -rf /etc/openvpn/crl.pem
+                        userdel $CLIENT
+                        rm -rf /etc/openvpn/google-authenticator/$CLIENT
 			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 			# CRL is read with each client connection, when OpenVPN is dropped to nobody
 			chown nobody:$GROUPNAME /etc/openvpn/crl.pem
@@ -161,7 +166,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					fi
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt-get remove --purge -y openvpn
+					apt-get remove --purge -y openvpn libpam-google-authenticator
 				else
 					yum remove openvpn -y
 				fi
@@ -222,6 +227,7 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
+                apt-get install libqrencode3 libpam-google-authenticator -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
@@ -252,6 +258,12 @@ else
 	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
+	# Create Google Authenticator
+        addgroup gauth
+        useradd -g gauth gauth
+        mkdir /etc/openvpn/google-authenticator
+        chown gauth:gauth /etc/openvpn/google-authenticator
+        chmod 0700 /etc/openvpn/google-authenticator
 	# Generate server.conf
 	echo "port $PORT
 proto $PROTOCOL
@@ -309,7 +321,9 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
-crl-verify crl.pem" >> /etc/openvpn/server.conf
+crl-verify crl.pem
+plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn" >> /etc/openvpn/server.conf
+	echo "auth required /lib/security/pam_google_authenticator.so secret=/etc/openvpn/google-authenticator/\${USER} user=gauth forward_pass" > /etc/pam.d/openvpn
 	# Enable net.ipv4.ip_forward for the system
 	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
 	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
@@ -410,7 +424,9 @@ cipher AES-256-CBC
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
-verb 3" > /etc/openvpn/client-common.txt
+verb 3
+ns-cert-type server
+auth-user-pass" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo ""
