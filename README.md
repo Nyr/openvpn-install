@@ -1,5 +1,5 @@
 ## openvpn-install
-OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian, Ubuntu and CentOS with OTP authentication.
+OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian and Ubuntu with OTP authentication.
 
 ### Installation
 Run the script and follow the assistant:
