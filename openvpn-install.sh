@@ -175,13 +175,11 @@ else
 	# Autodetect IP address and pre-fill for the user
 	IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 	read -p "IP address: " -e -i $IP IP
-	# Try to detect a NATed connection and ask the user about it
-	EXTERNALIP=$(wget -4qO- "http://whatismyip.akamai.com/" 2>/dev/null || curl -4s "http://whatismyip.akamai.com/")
-	if [[ "$IP" != "$EXTERNALIP" ]]; then
+	# If $IP is a private IP address, the server must be behind NAT
+	if echo "$IP" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
-		echo "If your server is behind NAT, please provide the public IP address or hostname."
-		echo "If that's not the case, just ignore this and leave the next field blank."
-		read -p "Public IP address / Hostname: " -e PUBLICIP
+		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
+		read -p "Public IP address / hostname: " -e PUBLICIP
 	fi
 	echo
 	echo "Which protocol do you want for OpenVPN connections?"
