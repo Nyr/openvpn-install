@@ -6,7 +6,7 @@
 
 
 # Detect Debian users running the script with "sh" instead of bash
-if readlink /proc/$$/exe | grep -qs "dash"; then
+if readlink /proc/$$/exe | grep -q "dash"; then
 	echo "This script needs to be run with bash, not sh"
 	exit 1
 fi
@@ -99,10 +99,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa --batch revoke $CLIENT
 			EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-			rm -rf pki/reqs/$CLIENT.req
-			rm -rf pki/private/$CLIENT.key
-			rm -rf pki/issued/$CLIENT.crt
-			rm -rf /etc/openvpn/crl.pem
+			rm -f pki/reqs/$CLIENT.req
+			rm -f pki/private/$CLIENT.key
+			rm -f pki/issued/$CLIENT.crt
+			rm -f /etc/openvpn/crl.pem
 			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 			# CRL is read with each client connection, when OpenVPN is dropped to nobody
 			chown nobody:$GROUPNAME /etc/openvpn/crl.pem
@@ -138,12 +138,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 						sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 					fi
 				fi
-				if hash sestatus 2>/dev/null; then
-					if sestatus | grep "Current mode" | grep -qs "enforcing"; then
-						if [[ "$PORT" != '1194' || "$PROTOCOL" = 'tcp' ]]; then
-							semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
-						fi
-					fi
+				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
+					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn
@@ -220,10 +216,6 @@ else
 		yum install epel-release -y
 		yum install openvpn iptables openssl ca-certificates -y
 	fi
-	# An old version of easy-rsa was available by default in some openvpn packages
-	if [[ -d /etc/openvpn/easy-rsa/ ]]; then
-		rm -rf /etc/openvpn/easy-rsa/
-	fi
 	# Get easy-rsa
 	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
 	wget -O ~/easyrsa.tgz "$EASYRSAURL" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$EASYRSAURL"
@@ -231,7 +223,7 @@ else
 	mv ~/EasyRSA-3.0.4/ /etc/openvpn/
 	mv /etc/openvpn/EasyRSA-3.0.4/ /etc/openvpn/easy-rsa/
 	chown -R root:root /etc/openvpn/easy-rsa/
-	rm -rf ~/easyrsa.tgz
+	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
@@ -345,17 +337,13 @@ exit 0' > $RCLOCAL
 			sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
 		fi
 	fi
-	# If SELinux is enabled and a custom port or TCP was selected, we need this
-	if hash sestatus 2>/dev/null; then
-		if sestatus | grep "Current mode" | grep -qs "enforcing"; then
-			if [[ "$PORT" != '1194' || "$PROTOCOL" = 'tcp' ]]; then
-				# semanage isn't available in CentOS 6 by default
-				if ! hash semanage 2>/dev/null; then
-					yum install policycoreutils-python -y
-				fi
-				semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
-			fi
+	# If SELinux is enabled and a custom port was selected, we need this
+	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
+		# Install semanage if not already present
+		if ! hash semanage 2>/dev/null; then
+			yum install policycoreutils-python -y
 		fi
+		semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
 	fi
 	# And finally, restart OpenVPN
 	if [[ "$OS" = 'debian' ]]; then
