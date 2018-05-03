@@ -362,7 +362,7 @@ exit 0' > $RCLOCAL
 			chkconfig openvpn on
 		fi
 	fi
-	# If the serrver is behind a NAT, use the correct IP address
+	# If the server is behind a NAT, use the correct IP address
 	if [[ "$PUBLICIP" != "" ]]; then
 		IP=$PUBLICIP
 	fi
