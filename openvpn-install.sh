@@ -367,7 +367,10 @@ exit 0' > $RCLOCAL
 		IP=$PUBLICIP
 	fi
 	# client-common.txt is created so we have a template to add further users later
-	echo "client
+	echo "script-security 2
+up /etc/openvpn/update-resolv-conf
+down /etc/openvpn/update-resolv-conf
+client
 dev tun
 proto $PROTOCOL
 sndbuf 0
