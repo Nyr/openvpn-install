@@ -8,18 +8,18 @@
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo "This script needs to be run with bash, not sh"
-	exit 1
+	exit
 fi
 
 if [[ "$EUID" -ne 0 ]]; then
 	echo "Sorry, you need to run this as root"
-	exit 2
+	exit
 fi
 
 if [[ ! -e /dev/net/tun ]]; then
 	echo "The TUN device is not available
 You need to enable TUN before running this script"
-	exit 3
+	exit
 fi
 
 if [[ -e /etc/debian_version ]]; then
@@ -32,7 +32,7 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	RCLOCAL='/etc/rc.d/rc.local'
 else
 	echo "Looks like you aren't running this installer on Debian, Ubuntu or CentOS"
-	exit 4
+	exit
 fi
 
 newclient () {
@@ -69,7 +69,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo
 			echo "Tell me a name for the client certificate."
 			echo "Please, use one word only, no special characters."
-			read -p "Client name: " -e -i client CLIENT
+			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa build-client-full $CLIENT nopass
 			# Generates the custom client.ovpn
@@ -85,7 +85,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			if [[ "$NUMBEROFCLIENTS" = '0' ]]; then
 				echo
 				echo "You have no existing clients!"
-				exit 5
+				exit
 			fi
 			echo
 			echo "Select the existing client certificate you want to revoke:"
@@ -96,24 +96,31 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				read -p "Select one client [1-$NUMBEROFCLIENTS]: " CLIENTNUMBER
 			fi
 			CLIENT=$(tail -n +2 /etc/openvpn/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$CLIENTNUMBER"p)
-			cd /etc/openvpn/easy-rsa/
-			./easyrsa --batch revoke $CLIENT
-			EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-			rm -f pki/reqs/$CLIENT.req
-			rm -f pki/private/$CLIENT.key
-			rm -f pki/issued/$CLIENT.crt
-			rm -f /etc/openvpn/crl.pem
-			cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
-			# CRL is read with each client connection, when OpenVPN is dropped to nobody
-			chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 			echo
-			echo "Certificate for client $CLIENT revoked!"
+			read -p "Do you really want to revoke access for client $CLIENT? [y/N]: " -e REVOKE
+			if [[ "$REVOKE" = 'y' || "$REVOKE" = 'Y' ]]; then
+				cd /etc/openvpn/easy-rsa/
+				./easyrsa --batch revoke $CLIENT
+				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+				rm -f pki/reqs/$CLIENT.req
+				rm -f pki/private/$CLIENT.key
+				rm -f pki/issued/$CLIENT.crt
+				rm -f /etc/openvpn/crl.pem
+				cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
+				# CRL is read with each client connection, when OpenVPN is dropped to nobody
+				chown nobody:$GROUPNAME /etc/openvpn/crl.pem
+				echo
+				echo "Certificate for client $CLIENT revoked!"
+			else
+				echo
+				echo "Certificate revocation for client $CLIENT aborted!"
+			fi
 			exit
 			;;
 			3) 
 			echo
-			read -p "Do you really want to remove OpenVPN? [y/n]: " -e -i n REMOVE
-			if [[ "$REMOVE" = 'y' ]]; then
+			read -p "Do you really want to remove OpenVPN? [y/N]: " -e REMOVE
+			if [[ "$REMOVE" = 'y' || "$REMOVE" = 'Y' ]]; then
 				PORT=$(grep '^port ' /etc/openvpn/server.conf | cut -d " " -f 2)
 				PROTOCOL=$(grep '^proto ' /etc/openvpn/server.conf | cut -d " " -f 2)
 				if pgrep firewalld; then
