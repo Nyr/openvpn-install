@@ -389,6 +389,8 @@ auth SHA512
 cipher AES-256-CBC
 comp-lzo
 setenv opt block-outside-dns
+ifconfig-ipv6 fd69:2205:1941:1::1/64 fd69:2205:1941:1::2
+redirect-gateway ipv6
 key-direction 1
 verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
