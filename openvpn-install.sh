@@ -71,7 +71,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
-			./easyrsa build-client-full $CLIENT nopass\
+			./easyrsa build-client-full $CLIENT nopass
 			# Ask to set a passphrase for the configuration file
 			read -p "Do you want to set a passphrase for the configuration file? [y/N]: " -e -i N SETPASS
 			if [[ "$SETPASS" = 'y' || "$SETPASS" = 'Y' ]]; then
