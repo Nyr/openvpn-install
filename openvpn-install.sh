@@ -72,6 +72,11 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa build-client-full $CLIENT nopass
+			# Ask to set a passphrase for the configuration file
+			read -p "Do you want to set a passphrase for the configuration file? [y/N]: " -e -i N SETPASS
+			if [[ "$SETPASS" = 'y' || "$SETPASS" = 'Y' ]]; then
+				./easyrsa set-rsa-pass $CLIENT
+			fi
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo
