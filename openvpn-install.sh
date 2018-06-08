@@ -154,6 +154,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					yum remove openvpn -y
 				fi
 				rm -rf /etc/openvpn
+				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				echo
 				echo "OpenVPN removed!"
 			else
@@ -304,11 +305,8 @@ status openvpn-status.log
 verb 3
 crl-verify crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
-	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
-	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
-		echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-	fi
-	# Avoid an unneeded reboot
+	echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
+	# Enable without waiting for a reboot or service restart
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	if pgrep firewalld; then
 		# Using both permanent and not permanent rules to avoid a firewalld
