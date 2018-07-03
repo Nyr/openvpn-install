@@ -155,6 +155,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				else
 					yum remove openvpn -y
 				fi
+				OVPNS=$(ls /etc/openvpn/easy-rsa/pki/issued | awk -F "." {'print $1'})
+				for i in $OVPNS
+				do
+				rm $(find /home -maxdepth 2 | grep $i.ovpn) 2>/dev/null
+				rm /root/$i.ovpn 2>/dev/null
+				done
 				rm -rf /etc/openvpn
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				echo
