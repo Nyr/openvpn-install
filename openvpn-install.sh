@@ -109,6 +109,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				cp /etc/openvpn/easy-rsa/pki/crl.pem /etc/openvpn/crl.pem
 				# CRL is read with each client connection, when OpenVPN is dropped to nobody
 				chown nobody:$GROUPNAME /etc/openvpn/crl.pem
+				rm -rf $(find /home -maxdepth 2 | grep $CLIENT.ovpn) 2>/dev/null
+				rm -rf /root/$CLIENT.ovpn 2>/dev/null
 				echo
 				echo "Certificate for client $CLIENT revoked!"
 			else
