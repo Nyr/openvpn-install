@@ -388,6 +388,7 @@ cipher AES-256-GCM
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
+reneg-sec 3600
 verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
