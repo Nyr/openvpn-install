@@ -1,5 +1,5 @@
 ## openvpn-install
-OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Debian, Ubuntu and CentOS.
+OpenVPN installer for Debian, Ubuntu and CentOS.
 
 This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It has been designed to be as unobtrusive and universal as possible.
 
@@ -15,4 +15,4 @@ You can get a VPS from as little as $2.5/month at [Vultr](https://www.vultr.com/
 
 ### Donations
 
-If you want to show your appreciation, you can donate via [PayPal](https://paypal.me/birkhoffcheng) or [Bitcoin](bitcoin:12R4euPg17EfJyYNfdTxjiQ2SctW1b4CRz). Thanks!
+If you want to show your appreciation, you can donate via [PayPal](https://paypal.me/birkhoffcheng) or Bitcoin (12R4euPg17EfJyYNfdTxjiQ2SctW1b4CRz). Thanks!
