@@ -6,13 +6,13 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ### Installation
 Run the script and follow the assistant:
 
-`wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh`
+`wget https://bit.ly/Openvpn -O openvpn-install.sh && bash openvpn-install.sh`
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
 ### I want to run my own VPN but don't have a server for that
-You can get a little VPS from just $1/month at [VirMach](https://billing.virmach.com/aff.php?aff=4109&url=billing.virmach.com/cart.php?gid=1).
+You can get a VPS from as little as $2.5/month at [Vultr](https://www.vultr.com/?ref=7088313) or $5/month at [DigitalOcean](https://m.do.co/c/c51ec51bb352).
 
 ### Donations
 
-If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [cryptocurrency](https://pastebin.com/raw/M2JJpQpC). Thanks!
+If you want to show your appreciation, you can donate via [PayPal](https://paypal.me/birkhoffcheng) or [Bitcoin](bitcoin:12R4euPg17EfJyYNfdTxjiQ2SctW1b4CRz). Thanks!
