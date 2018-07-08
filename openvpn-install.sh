@@ -168,7 +168,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 	done
 else
 	clear
-	echo 'Welcome to this OpenVPN "road warrior" installer!'
+	echo 'Welcome to this OpenVPN installer!'
 	echo
 	# OpenVPN setup and first user creation
 	echo "I need to ask you a few questions before starting the setup."
@@ -201,6 +201,19 @@ else
 	echo
 	echo "What port do you want OpenVPN listening to?"
 	read -p "Port: " -e -i 1194 PORT
+	echo
+	echo "Which cipher mode do you want to use?"
+	echo "   1) AES-256-GCM (provides authenticated encryption)"
+	echo "   2) AES-256-CBC (compatible with versions of OpenVPN older than 2.4)"
+	read -p "Cipher Mode [1-2]" -e -i 1 CIPHERCHOICE
+	case $CIPHERCHOICE in
+		1)
+		CIPHER=AES-256-GCM
+		;;
+		2)
+		CIPHER=AES-256-CBC
+		;;
+	esac
 	echo
 	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
@@ -296,7 +309,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
-cipher AES-256-GCM
+cipher $CIPHER
 comp-lzo
 user nobody
 group $GROUPNAME
@@ -385,7 +398,7 @@ persist-key
 persist-tun
 remote-cert-tls server
 auth SHA512
-cipher AES-256-GCM
+cipher $CIPHER
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
