@@ -10,7 +10,7 @@ Run the script and follow the assistant:
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
-### I want to run my own VPN but don't have a server for that
+### Where to get VPS
 You can get a VPS from as little as $2.5/month at [Vultr](https://www.vultr.com/?ref=7088313) or $5/month at [DigitalOcean](https://m.do.co/c/c51ec51bb352).
 
 ### Donations
