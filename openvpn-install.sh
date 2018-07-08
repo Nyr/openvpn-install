@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# https://github.com/Nyr/openvpn-install
+# https://github.com/birkhoffcheng/openvpn-install
 #
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
@@ -213,6 +213,7 @@ else
 	echo "Finally, tell me your name for the client certificate."
 	echo "Please, use one word only, no special characters."
 	read -p "Client name: " -e -i client CLIENT
+	read -p "For how long should each session key be used? (seconds) " -e -i 3600 RENEGKEY
 	echo
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
 	read -n1 -r -p "Press any key to continue..."
@@ -388,7 +389,7 @@ cipher AES-256-GCM
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
-reneg-sec 3600
+reneg-sec $RENEGKEY
 verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
