@@ -61,7 +61,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo
 			echo "Tell me a name for the client certificate."
 			echo "Please, use one word only, no special characters."
@@ -72,6 +72,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
+			echo "and ~/client.ssl. Install stunnel4 on client before you continue."
 			exit
 			;;
 			2)
@@ -113,7 +114,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			exit
 			;;
-			3) 
+			3)
 			echo
 			read -p "Do you really want to remove OpenVPN? [y/N]: " -e REMOVE
 			if [[ "$REMOVE" = 'y' || "$REMOVE" = 'Y' ]]; then
@@ -185,23 +186,29 @@ else
 	echo "Which protocol do you want for OpenVPN connections?"
 	echo "   1) UDP (recommended)"
 	echo "   2) TCP"
-	read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
-	case $PROTOCOL in
-		1) 
+	echo "   3) TCP with OpenVPN over SSL"
+	read -p "Protocol [1-3]: " -e -i 1 PROTOCOLCHOICE
+	case $PROTOCOLCHOICE in
+		1)
 		PROTOCOL=udp
+		SSL=0
 		;;
-		2) 
+		2)
 		PROTOCOL=tcp
+		SSL=0
 		;;
+		3)
+		PROTOCOL=tcp
+		SSL=1
 	esac
 	echo
 	echo "What port do you want OpenVPN listening to?"
-	read -p "Port: " -e -i 1194 PORT
+	read -p "Port: " -e -i 443 PORT
 	echo
 	echo "Which cipher mode do you want to use?"
 	echo "   1) AES-256-GCM (provides authenticated encryption)"
 	echo "   2) AES-256-CBC (compatible with versions of OpenVPN older than 2.4)"
-	read -p "Cipher Mode [1-2]" -e -i 1 CIPHERCHOICE
+	read -p "Cipher Mode [1-2]: " -e -i 1 CIPHERCHOICE
 	case $CIPHERCHOICE in
 		1)
 		CIPHER=AES-256-GCM
@@ -228,11 +235,11 @@ else
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		apt-get install openvpn iptables openssl ca-certificates stunnel4 -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates -y
+		yum install openvpn iptables openssl ca-certificates stunnel4 -y
 	fi
 	# Get easy-rsa
 	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
@@ -257,8 +264,29 @@ else
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Generate server.conf
-	echo "port $PORT
-proto $PROTOCOL
+	if [[ $SSL==1 ]]; then
+		echo "port 1194" > /etc/openvpn/server.conf
+		echo "sslVersion = all
+options = NO_SSLv2
+chroot = /var/lib/stunnel4/
+pid = /stunnel4.pid
+debug = 0
+output = /dev/null
+setuid = root
+setgid = root
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+compression = zlib
+
+[openvpn]
+accept = 0.0.0.0:$PORT
+connect = 127.0.0.1:1194
+cert=/etc/openvpn/server.crt
+key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
+	else
+		echo "port $PORT" > /etc/openvpn/server.conf
+	fi
+	echo "proto $PROTOCOL
 dev tun
 sndbuf 0
 rcvbuf 0
@@ -270,7 +298,7 @@ auth SHA512
 tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
@@ -386,9 +414,13 @@ exit 0' > $RCLOCAL
 dev tun
 proto $PROTOCOL
 sndbuf 0
-rcvbuf 0
-remote $IP $PORT
-resolv-retry infinite
+rcvbuf 0" > /etc/openvpn/client-common.txt
+	if [[ $SSL=1 ]]; then
+		echo "remote 127.0.0.1 1194" >> /etc/openvpn/client-common.txt
+	else
+		echo "remote $IP $PORT" >> /etc/openvpn/client-common.txt
+	fi
+	echo "resolv-retry infinite
 nobind
 persist-key
 persist-tun
@@ -399,12 +431,25 @@ comp-lzo
 setenv opt block-outside-dns
 key-direction 1
 reneg-sec $RENEGKEY
-verb 3" > /etc/openvpn/client-common.txt
+verb 3" >> /etc/openvpn/client-common.txt
+	echo "client = yes
+debug = 6
+
+[openvpn]
+accept = 127.0.0.1:1194
+connect = $IP:$PORT
+TIMEOUTclose = 0
+verify = 3
+CAfile = stunnel.crt" > /etc/openvpn/client.ssl
+	cp /etc/openvpn/client.ssl $HOME/
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
 	echo "Finished!"
 	echo
-	echo "Your client configuration is available at:" ~/"$CLIENT.ovpn"
+	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
+	if [[ $SSL=1 ]]; then
+		echo "and ~/client.ssl. Install stunnel4 on client before you continue."
+	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
