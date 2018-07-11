@@ -146,7 +146,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt-get remove --purge -y openvpn
+					apt remove --purge -y openvpn
 				else
 					yum remove openvpn -y
 				fi
@@ -186,7 +186,7 @@ else
 	echo "Which protocol do you want for OpenVPN connections?"
 	echo "   1) UDP (recommended)"
 	echo "   2) TCP"
-	echo "   3) TCP with OpenVPN over SSL"
+	echo "   3) OpenVPN over SSL"
 	read -p "Protocol [1-3]: " -e -i 1 PROTOCOLCHOICE
 	case $PROTOCOLCHOICE in
 		1)
@@ -200,6 +200,7 @@ else
 		3)
 		PROTOCOL=tcp
 		SSL=1
+		;;
 	esac
 	echo
 	echo "What port do you want OpenVPN listening to?"
@@ -234,8 +235,9 @@ else
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
-		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates stunnel4 -y
+		apt update
+		apt dist-upgrade -y
+		apt install openvpn iptables openssl ca-certificates stunnel4 -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
@@ -265,23 +267,21 @@ else
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Generate server.conf
 	if [[ $SSL==1 ]]; then
-		echo "port 1194" > /etc/openvpn/server.conf
+		echo "local 127.0.0.1" > /etc/openvpn/server.conf
+		echo "port 1194" >> /etc/openvpn/server.conf
+		csplit -f /etc/stunnel/cert. /etc/openvpn/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+		rm /etc/stunnel/cert.00
+		mv /etc/stunnel/cert.01 /etc/stunnel/server.crt
+		cp /etc/openvpn/server.key /etc/stunnel/
 		echo "sslVersion = all
-options = NO_SSLv2
-chroot = /var/lib/stunnel4/
-pid = /stunnel4.pid
-debug = 0
-output = /dev/null
-setuid = root
-setgid = root
-socket = l:TCP_NODELAY=1
-socket = r:TCP_NODELAY=1
-compression = zlib
-
+;chroot = /var/lib/stunnel4/
+pid = /var/run/stunnel4.pid
+debug = 3
+output = /var/log/stunnel4/stunnel.log
 [openvpn]
-accept = 0.0.0.0:$PORT
+accept = 0.0.0.0:443
 connect = 127.0.0.1:1194
-cert=/etc/openvpn/server.crt
+cert=/etc/stunnel/server.crt
 key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
 	else
 		echo "port $PORT" > /etc/openvpn/server.conf
@@ -440,8 +440,9 @@ accept = 127.0.0.1:1194
 connect = $IP:$PORT
 TIMEOUTclose = 0
 verify = 3
-CAfile = stunnel.crt" > /etc/openvpn/client.ssl
+CAfile = ssl.crt" > /etc/openvpn/client.ssl
 	cp /etc/openvpn/client.ssl $HOME/
+	cp /etc/openvpn/server.crt $HOME/ssl.crt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
@@ -449,7 +450,7 @@ CAfile = stunnel.crt" > /etc/openvpn/client.ssl
 	echo
 	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
 	if [[ $SSL=1 ]]; then
-		echo "and ~/client.ssl. Install stunnel4 on client before you continue."
+		echo "~/ssl.crt and ~/client.ssl. Install stunnel4 on client before you continue."
 	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
