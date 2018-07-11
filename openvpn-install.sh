@@ -152,7 +152,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				else
 					yum remove openvpn stunnel4 -y
 				fi
-				rm -rf /etc/openvpn
+				rm -rf /etc/openvpn /etc/stunnel
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				echo
 				echo "OpenVPN removed!"
