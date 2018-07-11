@@ -69,6 +69,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa build-client-full $CLIENT nopass
 			# Generates the custom client.ovpn
+			cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+			cp /etc/openvpn/server.crt $HOME/stunnel.crt
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
@@ -260,6 +262,9 @@ else
 	./easyrsa build-client-full $CLIENT nopass
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
+	csplit -f /etc/openvpn/easy-rsa/pki/issued/cert. /etc/openvpn/easy-rsa/pki/issued/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+	rm /etc/openvpn/easy-rsa/pki/issued/cert.00 /etc/openvpn/easy-rsa/pki/issued/server.crt
+	mv /etc/openvpn/easy-rsa/pki/issued/cert.01 /etc/openvpn/easy-rsa/pki/issued/server.crt
 	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn
 	# CRL is read with each client connection, when OpenVPN is dropped to nobody
 	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
@@ -269,21 +274,20 @@ else
 	if [[ $SSL==1 ]]; then
 		echo "local 127.0.0.1" > /etc/openvpn/server.conf
 		echo "port 1194" >> /etc/openvpn/server.conf
-		csplit -f /etc/openvpn/cert. /etc/openvpn/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
-		rm /etc/openvpn/cert.00 /etc/openvpn/server.crt
-		mv /etc/openvpn/cert.01 /etc/openvpn/server.crt
-		cp /etc/openvpn/server.crt /etc/stunnel/
-		cp /etc/openvpn/server.key /etc/stunnel/
 		echo "sslVersion = all
 ;chroot = /var/lib/stunnel4/
 pid = /var/run/stunnel4.pid
-debug = 3
+debug = 7
 output = /var/log/stunnel4/stunnel.log
+setuid = root
+setgid = root
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
 [openvpn]
-accept = 0.0.0.0:443
+accept = 0.0.0.0:$PORT
 connect = 127.0.0.1:1194
-cert=/etc/stunnel/server.crt
-key=/etc/stunnel/server.key" > /etc/stunnel/stunnel.conf
+cert=/etc/openvpn/server.crt
+key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
 	else
 		echo "port $PORT" > /etc/openvpn/server.conf
 	fi
@@ -433,16 +437,22 @@ setenv opt block-outside-dns
 key-direction 1
 reneg-sec $RENEGKEY
 verb 3" >> /etc/openvpn/client-common.txt
-	echo "client = yes
-debug = 6
+	if [[ $SSL=1 ]]; then
+		echo "client = yes
+debug = 7
 [openvpn]
 accept = 127.0.0.1:1194
 connect = $IP:$PORT
-TIMEOUTclose = 0
-verify = 3
+TIMEOUTclose = 1000
+session=300
+stack=65536
+sslVersion=TLSv1.2
+setuid=root
+setgid=root
 CAfile = stunnel.crt" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
 	cp /etc/openvpn/server.crt $HOME/stunnel.crt
+	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
