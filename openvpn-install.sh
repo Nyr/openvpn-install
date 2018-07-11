@@ -287,6 +287,11 @@ accept = 0.0.0.0:$PORT
 connect = 127.0.0.1:1194
 cert=/etc/openvpn/server.crt
 key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
+		echo 'ENABLED=1
+FILES="/etc/stunnel/*.conf"
+OPTIONS=""
+PPP_RESTART=0
+RLIMITS=""' > /etc/default/stunnel4
 	else
 		echo "port $PORT" > /etc/openvpn/server.conf
 	fi
