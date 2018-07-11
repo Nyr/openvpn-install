@@ -440,7 +440,7 @@ accept = 127.0.0.1:1194
 connect = $IP:$PORT
 TIMEOUTclose = 0
 verify = 3
-CAfile = ssl.crt" > /etc/stunnel/stunnel-client.conf
+CAfile = stunnel.crt" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
 	cp /etc/openvpn/server.crt $HOME/stunnel.crt
 	# Generates the custom client.ovpn
