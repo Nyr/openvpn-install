@@ -70,11 +70,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			./easyrsa build-client-full $CLIENT nopass
 			# Generates the custom client.ovpn
 			cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
-			cp /etc/openvpn/server.crt $HOME/stunnel.crt
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
-			echo "and ~/client.ssl. Install stunnel4 on client before you continue."
+			echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
 			exit
 			;;
 			2)
@@ -448,10 +447,8 @@ session=300
 stack=65536
 sslVersion=TLSv1.2
 setuid=root
-setgid=root
-CAfile = stunnel.crt" > /etc/stunnel/stunnel-client.conf
+setgid=root" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
-	cp /etc/openvpn/server.crt $HOME/stunnel.crt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
@@ -460,7 +457,7 @@ CAfile = stunnel.crt" > /etc/stunnel/stunnel-client.conf
 	echo
 	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
 	if [[ $SSL=1 ]]; then
-		echo "~/stunnel.crt and ~/stunnel.conf. Install stunnel4 on client before you continue."
+		echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
 	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
