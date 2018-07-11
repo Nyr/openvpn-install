@@ -146,9 +146,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt remove --purge -y openvpn
+					apt remove --purge openvpn stunnel4 -y
 				else
-					yum remove openvpn -y
+					yum remove openvpn stunnel4 -y
 				fi
 				rm -rf /etc/openvpn
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
@@ -269,9 +269,10 @@ else
 	if [[ $SSL==1 ]]; then
 		echo "local 127.0.0.1" > /etc/openvpn/server.conf
 		echo "port 1194" >> /etc/openvpn/server.conf
-		csplit -f /etc/stunnel/cert. /etc/openvpn/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
-		rm /etc/stunnel/cert.00
-		mv /etc/stunnel/cert.01 /etc/stunnel/server.crt
+		csplit -f /etc/openvpn/cert. /etc/openvpn/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+		rm /etc/openvpn/cert.00 /etc/openvpn/server.crt
+		mv /etc/openvpn/cert.01 /etc/openvpn/server.crt
+		cp /etc/openvpn/server.crt /etc/stunnel/
 		cp /etc/openvpn/server.key /etc/stunnel/
 		echo "sslVersion = all
 ;chroot = /var/lib/stunnel4/
@@ -282,7 +283,7 @@ output = /var/log/stunnel4/stunnel.log
 accept = 0.0.0.0:443
 connect = 127.0.0.1:1194
 cert=/etc/stunnel/server.crt
-key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
+key=/etc/stunnel/server.key" > /etc/stunnel/stunnel.conf
 	else
 		echo "port $PORT" > /etc/openvpn/server.conf
 	fi
@@ -434,15 +435,14 @@ reneg-sec $RENEGKEY
 verb 3" >> /etc/openvpn/client-common.txt
 	echo "client = yes
 debug = 6
-
 [openvpn]
 accept = 127.0.0.1:1194
 connect = $IP:$PORT
 TIMEOUTclose = 0
 verify = 3
-CAfile = ssl.crt" > /etc/openvpn/client.ssl
-	cp /etc/openvpn/client.ssl $HOME/
-	cp /etc/openvpn/server.crt $HOME/ssl.crt
+CAfile = ssl.crt" > /etc/stunnel/stunnel-client.conf
+	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+	cp /etc/openvpn/server.crt $HOME/stunnel.crt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
@@ -450,7 +450,7 @@ CAfile = ssl.crt" > /etc/openvpn/client.ssl
 	echo
 	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
 	if [[ $SSL=1 ]]; then
-		echo "~/ssl.crt and ~/client.ssl. Install stunnel4 on client before you continue."
+		echo "~/stunnel.crt and ~/stunnel.conf. Install stunnel4 on client before you continue."
 	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
