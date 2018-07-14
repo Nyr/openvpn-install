@@ -1,7 +1,10 @@
-## openvpn-install
+## OpenVPN install
 OpenVPN installer for Debian, Ubuntu and CentOS.
 
 This script will let you setup your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It has been designed to be as unobtrusive and universal as possible.
+
+### To Developers and Users
+Only Trust Signed Commits.
 
 ### Installation
 Run the script and follow the assistant:
