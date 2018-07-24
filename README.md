@@ -26,7 +26,7 @@ This script lets you set up your own OpenVPN server in minutes, even if you no e
 
 ## Installation
 
-If you run into any issues during installation, please refer to [Troubleshooting](#Troubleshooting).
+If you run into any issues during installation, please refer to [Troubleshooting](#troubleshooting).
 ### Install on CentOS/Debian/Ubuntu
 
 - Run this in a terminal on your server, and follow the on-screen instructions:
@@ -106,13 +106,15 @@ If you run into any issues during installation, please refer to [Troubleshooting
 
 #### Android
 
-- Supported. Instructions coming soon.
+- OpenVPN is supported on Android, but OpenVPN over SSL support isn't very good.
+- If you installed OpenVPN without SSL, download [OpenVPN for Android](https://play.google.com/store/apps/details?id=de.blinkt.openvpn)
+- Import your OVPN file inside the app.
 
 #### iOS
 
 - OpenVPN is supported on iOS, but OpenVPN over SSL is not supported.
-- If you installed OpenVPN without SSL, download [OpenVPN Connect from App Store](https://itunes.apple.com/app/openvpn-connect/id590379981)
-- Follow the on-screen instruction to add the OpenVPN profile.
+- If you installed OpenVPN without SSL, download [OpenVPN Connect](https://itunes.apple.com/app/openvpn-connect/id590379981)
+- Follow the on-screen instruction to import the OpenVPN profile.
 
 ## Troubleshooting
 
