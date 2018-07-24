@@ -278,8 +278,6 @@ else
 pid = /var/run/stunnel4.pid
 debug = 7
 output = /var/log/stunnel4/stunnel.log
-setuid = root
-setgid = root
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 [openvpn]
@@ -450,9 +448,7 @@ connect = $IP:$PORT
 TIMEOUTclose = 1000
 session=300
 stack=65536
-sslVersion=TLSv1.2
-setuid=root
-setgid=root" > /etc/stunnel/stunnel-client.conf
+sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
 	fi
 	# Generates the custom client.ovpn
