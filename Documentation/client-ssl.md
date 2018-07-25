@@ -105,8 +105,6 @@
   sudo killall stunnel
   ```
 
-  ​
-
 ## Android
 
 - OpenVPN is supported on Android, but OpenVPN over SSL support isn't very good.
@@ -141,9 +139,6 @@
     ps -A | grep openvpn
     ```
 
-
   - If you still can't connect, try removing and reinstalling OpenVPN on your server. 
     - Run the install script and select `Uninstall`
     - Run the install script again and make sure you enter the correct information.
-
-  ​

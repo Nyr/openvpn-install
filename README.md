@@ -22,6 +22,7 @@ This script lets you set up your own OpenVPN server in minutes, even if you no e
 ## Installation
 
 If you run into any issues during installation, please refer to [Troubleshooting](#troubleshooting).
+
 ### Install on CentOS/Debian/Ubuntu
 
 - **Please note: if your server is running the following OS versions, please select `AES-256-CBC` when you're asked to select a cipher mode.**
@@ -95,7 +96,6 @@ If you run into any issues during installation, please refer to [Troubleshooting
     # You should see openvpn in the output
     ps -A | grep openvpn
     ```
-
 
   - If you still can't connect, try removing and reinstalling OpenVPN on your server. 
     - Run the install script and select `Uninstall`

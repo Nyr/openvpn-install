@@ -62,8 +62,6 @@
   sudo killall openvpn
   ```
 
-  ​
-
 ## Android
 
 - Download [OpenVPN for Android](https://play.google.com/store/apps/details?id=de.blinkt.openvpn) from Google Play Store
@@ -86,16 +84,13 @@
 
 - If you're unable to connect to your server with OpenVPN...
 
-  - Also check if OpenVPN is running on your server.
+  - Check if OpenVPN is running on your server.
 
     ```bash
     # You should see openvpn in the output
     ps -A | grep openvpn
     ```
 
-
   - If you still can't connect, try removing and reinstalling OpenVPN on your server. 
     - Run the install script and select `Uninstall`
     - Run the install script again and make sure you enter the correct information.
-
-  ​
