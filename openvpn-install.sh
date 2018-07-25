@@ -67,13 +67,15 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
-			./easyrsa build-client-full $CLIENT nopass
-			# Generates the custom client.ovpn
-			cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+			easyrsa build-client-full $CLIENT nopass
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
-			echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
+			if [ -f /etc/stunnel/stunnel-client.conf ]; then
+				cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+				cp /etc/openvpn/server.crt $HOME/stunnel.crt
+				echo "~/stunnel.crt and ~/stunnel.conf."
+			fi
 			exit
 			;;
 			2)
@@ -98,8 +100,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Do you really want to revoke access for client $CLIENT? [y/N]: " -e REVOKE
 			if [[ "$REVOKE" = 'y' || "$REVOKE" = 'Y' ]]; then
 				cd /etc/openvpn/easy-rsa/
-				./easyrsa --batch revoke $CLIENT
-				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+				easyrsa --batch revoke $CLIENT
+				EASYRSA_CRL_DAYS=3650 easyrsa gen-crl
 				rm -f pki/reqs/$CLIENT.req
 				rm -f pki/private/$CLIENT.key
 				rm -f pki/issued/$CLIENT.crt
@@ -147,9 +149,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt remove --purge openvpn stunnel4 -y
+					apt remove --purge openvpn stunnel4 easy-rsa -y
 				else
-					yum remove openvpn stunnel4 -y
+					yum remove openvpn stunnel4 easy-rsa -y
 				fi
 				rm -rf /etc/openvpn /etc/stunnel
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
@@ -238,28 +240,21 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt update
 		apt dist-upgrade -y
-		apt install openvpn iptables openssl ca-certificates stunnel4 -y
+		apt install openvpn iptables openssl ca-certificates stunnel4 easy-rsa -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates stunnel4 -y
+		yum install openvpn iptables openssl ca-certificates stunnel4 easy-rsa -y
 	fi
-	# Get easy-rsa
-	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
-	wget -O ~/easyrsa.tgz "$EASYRSAURL" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$EASYRSAURL"
-	tar xzf ~/easyrsa.tgz -C ~/
-	mv ~/EasyRSA-3.0.4/ /etc/openvpn/
-	mv /etc/openvpn/EasyRSA-3.0.4/ /etc/openvpn/easy-rsa/
-	chown -R root:root /etc/openvpn/easy-rsa/
-	rm -f ~/easyrsa.tgz
+	mkdir /etc/openvpn/easy-rsa/
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
-	./easyrsa init-pki
-	./easyrsa --batch build-ca nopass
-	./easyrsa gen-dh
-	./easyrsa build-server-full server nopass
-	./easyrsa build-client-full $CLIENT nopass
-	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+	easyrsa init-pki
+	easyrsa --batch build-ca nopass
+	easyrsa gen-dh
+	easyrsa build-server-full server nopass
+	easyrsa build-client-full $CLIENT nopass
+	EASYRSA_CRL_DAYS=3650 easyrsa gen-crl
 	# Move the stuff we need
 	csplit -f /etc/openvpn/easy-rsa/pki/issued/cert. /etc/openvpn/easy-rsa/pki/issued/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
 	rm /etc/openvpn/easy-rsa/pki/issued/cert.00 /etc/openvpn/easy-rsa/pki/issued/server.crt
@@ -278,8 +273,6 @@ else
 pid = /var/run/stunnel4.pid
 debug = 7
 output = /var/log/stunnel4/stunnel.log
-setuid = root
-setgid = root
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 [openvpn]
@@ -447,13 +440,14 @@ debug = 7
 [openvpn]
 accept = 127.0.0.1:1194
 connect = $IP:$PORT
+verify = 2
+CAfile = stunnel.crt
 TIMEOUTclose = 1000
 session=300
 stack=65536
-sslVersion=TLSv1.2
-setuid=root
-setgid=root" > /etc/stunnel/stunnel-client.conf
+sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+	cp /etc/openvpn/server.crt $HOME/stunnel.crt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
@@ -462,7 +456,7 @@ setgid=root" > /etc/stunnel/stunnel-client.conf
 	echo
 	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
 	if [[ $SSL=1 ]]; then
-		echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
+		echo "~/stunnel.crt and ~/stunnel.conf."
 	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
