@@ -67,13 +67,15 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
-			./easyrsa build-client-full $CLIENT nopass
-			# Generates the custom client.ovpn
-			cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+			easyrsa build-client-full $CLIENT nopass
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
-			echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
+			if [ -f /etc/stunnel/stunnel-client.conf ]; then
+				cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+				cp /etc/openvpn/server.crt $HOME/stunnel.crt
+				echo "~/stunnel.crt and ~/stunnel.conf."
+			fi
 			exit
 			;;
 			2)
@@ -98,8 +100,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Do you really want to revoke access for client $CLIENT? [y/N]: " -e REVOKE
 			if [[ "$REVOKE" = 'y' || "$REVOKE" = 'Y' ]]; then
 				cd /etc/openvpn/easy-rsa/
-				./easyrsa --batch revoke $CLIENT
-				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
+				easyrsa --batch revoke $CLIENT
+				EASYRSA_CRL_DAYS=3650 easyrsa gen-crl
 				rm -f pki/reqs/$CLIENT.req
 				rm -f pki/private/$CLIENT.key
 				rm -f pki/issued/$CLIENT.crt
@@ -438,11 +440,14 @@ debug = 7
 [openvpn]
 accept = 127.0.0.1:1194
 connect = $IP:$PORT
+verify = 2
+CAfile = stunnel.crt
 TIMEOUTclose = 1000
 session=300
 stack=65536
 sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+	cp /etc/openvpn/server.crt $HOME/stunnel.crt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
@@ -451,7 +456,7 @@ sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
 	echo
 	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
 	if [[ $SSL=1 ]]; then
-		echo "and ~/stunnel.conf. Install stunnel4 on client before you continue."
+		echo "~/stunnel.crt and ~/stunnel.conf."
 	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
