@@ -108,12 +108,12 @@
 ## Android
 
 - OpenVPN is supported on Android, but OpenVPN over SSL support isn't very good.
-- If you installed OpenVPN without SSL, see [Client Setup: OpenVPN](Documentation/client-ovpn.md)
+- If you installed OpenVPN without SSL, see [Client Setup: OpenVPN](client-ovpn.md)
 
 ## iOS
 
 - OpenVPN is supported on iOS, but OpenVPN over SSL is not supported.
-- If you installed OpenVPN without SSL, see [Client Setup: OpenVPN](Documentation/client-ovpn.md)
+- If you installed OpenVPN without SSL, see [Client Setup: OpenVPN](client-ovpn.md)
 
 ## Troubleshooting
 
