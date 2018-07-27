@@ -27,24 +27,22 @@ If you run into any issues during installation, please refer to [Troubleshooting
 
 - **Please note: if your server is running the following OS versions, please select `AES-256-CBC` when you're asked to select a cipher mode.**
 
-    - CentOS 6 or older
-    - Debian 8 (Jessie) or older
-    - Ubuntu 16.10 or older
+  - CentOS 6 or older
+  - Debian 8 (Jessie) or older
+  - Ubuntu 16.10 or older
 
 - Run this in a terminal on your server, and follow the on-screen instructions:
 
-    ```bash
-    # Download the script
-    wget https://raw.githubusercontent.com/birkhoffcheng/openvpn-install/master/openvpn-install.sh
+  ```bash
+  # Download the script
+  wget https://raw.githubusercontent.com/birkhoffcheng/openvpn-install/master/openvpn-install.sh
 
-    # Run the install script
-    sudo bash openvpn-install.sh
+  # Run the install script
+  sudo bash openvpn-install.sh
 
-    # Note: If you're running Ubuntu 16.10 or older
-
-    # Start stunnel (only if you're using OpenVPN over SSL)
-    sudo stunnel
-    ```
+  # Start stunnel (only if you're using OpenVPN over SSL)
+  sudo stunnel
+  ```
 
 - Once it finishes, your OpenVPN server is up and running! You should [set up client devices](#client-setup) next.
 
@@ -52,9 +50,10 @@ If you run into any issues during installation, please refer to [Troubleshooting
 
 ### Before continuing... 
 
--  Download `stunnel.conf` and the `.ovpn` file from your server.
--  If your username is `root`, they're located at `/root`.
--  Otherwise, they're located at `/home/<YOUR USERNAME>`.
+- Download the `.ovpn` file from your server.
+- If you're using OpenVPN with SSL, also download `stunnel.crt` and `stunnel.conf` from your server.
+- If your username is `root`, they're located at `/root`.
+- Otherwise, they're located at `/home/<YOUR USERNAME>`.
 
 ### OS-specific setup processes
 
@@ -97,7 +96,7 @@ If you run into any issues during installation, please refer to [Troubleshooting
     ps -A | grep openvpn
     ```
 
-  - If you still can't connect, try removing and reinstalling OpenVPN on your server. 
+  - If you still can't connect, try removing and reinstalling OpenVPN on your server.
     - Run the install script and select `Uninstall`
     - Run the install script again and make sure you enter the correct information.
 
@@ -109,4 +108,4 @@ You can get a VPS for as little as $2.50/month (IPv6 only) or $5/month (with IPv
 
 ## Donations
 
-If you want to show your appreciation, you can donate via [PayPal](https://paypal.me/birkhoffcheng) or Bitcoin (12R4euPg17EfJyYNfdTxjiQ2SctW1b4CRz). Thanks!
+If you want to show some appreciation, you can donate via [PayPal](https://paypal.me/birkhoffcheng) or Bitcoin (12R4euPg17EfJyYNfdTxjiQ2SctW1b4CRz). Thanks!

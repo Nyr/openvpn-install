@@ -149,9 +149,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt remove --purge openvpn stunnel4 easy-rsa -y
+					apt remove --purge openvpn stunnel4 -y
 				else
-					yum remove openvpn stunnel4 easy-rsa -y
+					yum remove openvpn stunnel4 -y
 				fi
 				rm -rf /etc/openvpn /etc/stunnel
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
@@ -240,21 +240,28 @@ else
 	if [[ "$OS" = 'debian' ]]; then
 		apt update
 		apt dist-upgrade -y
-		apt install openvpn iptables openssl ca-certificates stunnel4 easy-rsa -y
+		apt install curl openvpn iptables openssl ca-certificates stunnel4 -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates stunnel4 easy-rsa -y
+		yum install curl openvpn iptables openssl ca-certificates stunnel -y
 	fi
-	mkdir /etc/openvpn/easy-rsa/
+	# Get easy-rsa
+	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
+	wget -O ~/easyrsa.tgz "$EASYRSAURL" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$EASYRSAURL"
+	tar xzf ~/easyrsa.tgz -C ~/
+	mv ~/EasyRSA-3.0.4/ /etc/openvpn/
+	mv /etc/openvpn/EasyRSA-3.0.4/ /etc/openvpn/easy-rsa/
+	chown -R root:root /etc/openvpn/easy-rsa/
+	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/easy-rsa/
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
-	easyrsa init-pki
-	easyrsa --batch build-ca nopass
-	easyrsa gen-dh
-	easyrsa build-server-full server nopass
-	easyrsa build-client-full $CLIENT nopass
-	EASYRSA_CRL_DAYS=3650 easyrsa gen-crl
+	./easyrsa init-pki
+	./easyrsa --batch build-ca nopass
+	./easyrsa gen-dh
+	./easyrsa build-server-full server nopass
+	./easyrsa build-client-full $CLIENT nopass
+	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
 	csplit -f /etc/openvpn/easy-rsa/pki/issued/cert. /etc/openvpn/easy-rsa/pki/issued/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
 	rm /etc/openvpn/easy-rsa/pki/issued/cert.00 /etc/openvpn/easy-rsa/pki/issued/server.crt
@@ -441,13 +448,13 @@ debug = 7
 accept = 127.0.0.1:1194
 connect = $IP:$PORT
 verify = 2
-CAfile = stunnel.crt
+CAfile = /etc/stunnel/stunnel.crt
 TIMEOUTclose = 1000
 session=300
 stack=65536
 sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
 	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
-	cp /etc/openvpn/server.crt $HOME/stunnel.crt
+	cp /etc/openvpn/ca.crt $HOME/stunnel.crt
 	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
