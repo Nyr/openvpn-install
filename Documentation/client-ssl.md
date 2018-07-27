@@ -12,7 +12,12 @@
 ## Windows
 
 - Configure `stunnel`
-  - Download and install [stunnel](https://www.stunnel.org/downloads.html) 
+  - Download and install [stunnel](https://www.stunnel.org/downloads.html)
+  - Copy `stunnel.conf` and `stunnel.crt` to the `config` folder in `stunnel`'s install directory.
+    - On 64-bit Windows systems, `stunnel`'s install directory is `C:\Program Files (x86)\stunnel`, unless you
+      changed it during installation.
+    - On 32-bit Windows systems, `stunnel`'s install directory is `C:\Program Files\stunnel`, unless you
+      changed it during installation.
   - Start `stunnel` by launching `stunnel GUI start ` from the Start Menu
   - Locate the `stunnel` icon in the Task Bar, right click, and select `Edit Configuration`
   - Copy everything in `stunnel.conf` and paste into the `stunnel` configuration file. Save and close it after editing.
@@ -38,15 +43,21 @@
     ```bash
     brew install stunnel
     ```
+  - Open `stunnel.conf` with a text editor (e.g. `TextEdit`), locate this line:
 
+    `CAfile = /etc/stunnel/stunnel.crt`
+
+    Replace the entire line with:
+
+    `CAfile = /usr/local/etc/stunnel/stunnel.crt`
   - Configure and start `stunnel`
 
     ```bash
     # In order to run these, you need to log in to your Mac with an administrator account. 
     # When prompted for password, enter the password of the current user,
 
-    # Run this in the directory that contains 'stunnel.conf'
-    sudo cp stunnel.conf /usr/local/etc/stunnel/stunnel.conf
+    # Run this in the directory that contains 'stunnel.conf' and 'stunnel.crt'
+    sudo cp stunnel.conf stunnel.crt /usr/local/etc/stunnel/
     # Start stunnel
     sudo stunnel
     ```
@@ -81,8 +92,8 @@
 - Configure and start `stunnel`
 
   ```bash
-  # Run this in the directory that contains 'stunnel.conf'
-  sudo cp stunnel.conf /etc/stunnel/
+  # Run this in the directory that contains 'stunnel.conf' and 'stunnel.crt'
+  sudo cp stunnel.conf stunnel.crt /etc/stunnel/
   # Start stunnel
   sudo stunnel
   ```
