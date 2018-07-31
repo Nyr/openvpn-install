@@ -22,6 +22,11 @@ You need to enable TUN before running this script"
 	exit
 fi
 
+if ! [ -x "$(command -v gpg)" ]; then
+  echo 'Missing program gpg.'
+  exit
+fi
+
 if [[ -e /etc/debian_version ]]; then
 	OS=debian
 	GROUPNAME=nogroup
@@ -224,15 +229,30 @@ else
 		yum install epel-release -y
 		yum install openvpn iptables openssl ca-certificates -y
 	fi
+	# Import easy-rsa key
+	gpg --keyserver keyserver.ubuntu.com --recv 9D7367F3
 	# Get easy-rsa
 	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
+	EASYRSAURLSIG='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz.sig'
 	wget -O ~/easyrsa.tgz "$EASYRSAURL" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$EASYRSAURL"
+	wget -O ~/easyrsa.tgz.sig "$EASYRSAURLSIG" 2>/dev/null || curl -Lo ~/easyrsa.tgz.sig "$EASYRSAURLSIG"
+	gpg --verify ~/easyrsa.tgz.sig ~/easyrsa.tgz
+	if [ $? -eq 1 ]
+	then
+		echo "Invalid signature on easy-rsa file."
+		exit
+	fi
 	tar xzf ~/easyrsa.tgz -C ~/
 	mv ~/EasyRSA-3.0.4/ /etc/openvpn/
 	mv /etc/openvpn/EasyRSA-3.0.4/ /etc/openvpn/easy-rsa/
 	chown -R root:root /etc/openvpn/easy-rsa/
 	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/easy-rsa/
+	# Setup vars to use EC.
+	echo 'set_var EASYRSA_ALGO ec
+set_var EASYRSA_CURVE secp384r1
+set_var EASYRSA_DIGEST "sha512"
+' > /etc/openvpn/easy-rsa/vars
 	# Create the PKI, set up the CA, the DH params and the server + client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
@@ -295,7 +315,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
-cipher AES-256-CBC
+cipher AES-256-GCM
 comp-lzo
 user nobody
 group $GROUPNAME
@@ -384,7 +404,7 @@ persist-key
 persist-tun
 remote-cert-tls server
 auth SHA512
-cipher AES-256-CBC
+cipher AES-256-GCM
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
