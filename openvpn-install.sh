@@ -67,7 +67,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
-			easyrsa build-client-full $CLIENT nopass
+			./easyrsa build-client-full $CLIENT nopass
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
@@ -100,8 +100,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			read -p "Do you really want to revoke access for client $CLIENT? [y/N]: " -e REVOKE
 			if [[ "$REVOKE" = 'y' || "$REVOKE" = 'Y' ]]; then
 				cd /etc/openvpn/easy-rsa/
-				easyrsa --batch revoke $CLIENT
-				EASYRSA_CRL_DAYS=3650 easyrsa gen-crl
+				./easyrsa --batch revoke $CLIENT
+				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 				rm -f pki/reqs/$CLIENT.req
 				rm -f pki/private/$CLIENT.key
 				rm -f pki/issued/$CLIENT.crt
