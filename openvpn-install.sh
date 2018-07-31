@@ -230,10 +230,11 @@ else
 	echo "   5) Verisign"
 	read -p "DNS [1-5]: " -e -i 1 DNS
 	echo
+	read -p "For how long should each session key be used? (seconds) " -e -i 3600 RENEGKEY
+	echo
 	echo "Finally, tell me your name for the client certificate."
 	echo "Please, use one word only, no special characters."
 	read -p "Client name: " -e -i client CLIENT
-	read -p "For how long should each session key be used? (seconds) " -e -i 3600 RENEGKEY
 	echo
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
 	read -n1 -r -p "Press any key to continue..."
