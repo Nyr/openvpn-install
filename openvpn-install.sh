@@ -1,9 +1,5 @@
 #!/bin/bash
-#
-# https://github.com/Nyr/openvpn-install
-#
-# Copyright (c) 2013 Nyr. Released under the MIT License.
-
+# https://github.com/birkhoffcheng/openvpn-install
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
@@ -65,17 +61,21 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo
 			echo "Tell me a name for the client certificate."
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
 			./easyrsa build-client-full $CLIENT nopass
-			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo
 			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
+			if [ -f /etc/stunnel/stunnel-client.conf ]; then
+				cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+				cp /etc/openvpn/server.crt $HOME/stunnel.crt
+				echo "~/stunnel.crt and ~/stunnel.conf."
+			fi
 			exit
 			;;
 			2)
@@ -117,7 +117,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			exit
 			;;
-			3) 
+			3)
 			echo
 			read -p "Do you really want to remove OpenVPN? [y/N]: " -e REMOVE
 			if [[ "$REMOVE" = 'y' || "$REMOVE" = 'Y' ]]; then
@@ -149,11 +149,12 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt-get remove --purge -y openvpn
+					apt purge openvpn stunnel4 -y
+					apt autoremove --purge -y
 				else
-					yum remove openvpn -y
+					yum remove openvpn stunnel4 -y
 				fi
-				rm -rf /etc/openvpn
+				rm -rf /etc/openvpn /etc/stunnel
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				echo
 				echo "OpenVPN removed!"
@@ -168,7 +169,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 	done
 else
 	clear
-	echo 'Welcome to this OpenVPN "road warrior" installer!'
+	echo 'Welcome to OpenVPN installer!'
 	echo
 	# OpenVPN setup and first user creation
 	echo "I need to ask you a few questions before starting the setup."
@@ -189,18 +190,38 @@ else
 	echo "Which protocol do you want for OpenVPN connections?"
 	echo "   1) UDP (recommended)"
 	echo "   2) TCP"
-	read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
-	case $PROTOCOL in
-		1) 
+	echo "   3) OpenVPN over SSL"
+	read -p "Protocol [1-3]: " -e -i 1 PROTOCOLCHOICE
+	case $PROTOCOLCHOICE in
+		1)
 		PROTOCOL=udp
+		SSL=0
 		;;
-		2) 
+		2)
 		PROTOCOL=tcp
+		SSL=0
+		;;
+		3)
+		PROTOCOL=tcp
+		SSL=1
 		;;
 	esac
 	echo
 	echo "What port do you want OpenVPN listening to?"
-	read -p "Port: " -e -i 1194 PORT
+	read -p "Port: " -e -i 443 PORT
+	echo
+	echo "Which cipher mode do you want to use?"
+	echo "   1) AES-256-GCM (provides authenticated encryption)"
+	echo "   2) AES-256-CBC (compatible with versions of OpenVPN older than 2.4)"
+	read -p "Cipher Mode [1-2]: " -e -i 1 CIPHERCHOICE
+	case $CIPHERCHOICE in
+		1)
+		CIPHER=AES-256-GCM
+		;;
+		2)
+		CIPHER=AES-256-CBC
+		;;
+	esac
 	echo
 	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
@@ -210,6 +231,8 @@ else
 	echo "   5) Verisign"
 	read -p "DNS [1-5]: " -e -i 1 DNS
 	echo
+	read -p "For how long should each session key be used? (seconds) " -e -i 3600 RENEGKEY
+	echo
 	echo "Finally, tell me your name for the client certificate."
 	echo "Please, use one word only, no special characters."
 	read -p "Client name: " -e -i client CLIENT
@@ -217,12 +240,13 @@ else
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
-		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		apt update
+		apt dist-upgrade -y
+		apt install curl openvpn iptables openssl ca-certificates stunnel4 -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates -y
+		yum install curl openvpn iptables openssl ca-certificates stunnel -y
 	fi
 	# Get easy-rsa
 	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.4/EasyRSA-3.0.4.tgz'
@@ -241,14 +265,39 @@ else
 	./easyrsa build-client-full $CLIENT nopass
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
+	csplit -f /etc/openvpn/easy-rsa/pki/issued/cert. /etc/openvpn/easy-rsa/pki/issued/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+	rm /etc/openvpn/easy-rsa/pki/issued/cert.00 /etc/openvpn/easy-rsa/pki/issued/server.crt
+	mv /etc/openvpn/easy-rsa/pki/issued/cert.01 /etc/openvpn/easy-rsa/pki/issued/server.crt
 	cp pki/ca.crt pki/private/ca.key pki/dh.pem pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn
 	# CRL is read with each client connection, when OpenVPN is dropped to nobody
 	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Generate server.conf
-	echo "port $PORT
-proto $PROTOCOL
+	if [[ $SSL==1 ]]; then
+		echo "local 127.0.0.1" > /etc/openvpn/server.conf
+		echo "port 1194" >> /etc/openvpn/server.conf
+		echo "sslVersion = all
+;chroot = /var/lib/stunnel4/
+pid = /var/run/stunnel4.pid
+debug = 7
+output = /var/log/stunnel4/stunnel.log
+socket = l:TCP_NODELAY=1
+socket = r:TCP_NODELAY=1
+[openvpn]
+accept = 0.0.0.0:$PORT
+connect = 127.0.0.1:1194
+cert=/etc/openvpn/server.crt
+key=/etc/openvpn/server.key" > /etc/stunnel/stunnel.conf
+		echo 'ENABLED=1
+FILES="/etc/stunnel/*.conf"
+OPTIONS=""
+PPP_RESTART=0
+RLIMITS=""' > /etc/default/stunnel4
+	else
+		echo "port $PORT" > /etc/openvpn/server.conf
+	fi
+	echo "proto $PROTOCOL
 dev tun
 sndbuf 0
 rcvbuf 0
@@ -260,7 +309,7 @@ auth SHA512
 tls-auth ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
-ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
+ifconfig-pool-persist ipp.txt" >> /etc/openvpn/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server.conf
 	# DNS
 	case $DNS in
@@ -295,7 +344,7 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
-cipher AES-256-CBC
+cipher $CIPHER
 comp-lzo
 user nobody
 group $GROUPNAME
@@ -376,24 +425,47 @@ exit 0' > $RCLOCAL
 dev tun
 proto $PROTOCOL
 sndbuf 0
-rcvbuf 0
-remote $IP $PORT
-resolv-retry infinite
+rcvbuf 0" > /etc/openvpn/client-common.txt
+	if [[ $SSL=1 ]]; then
+		echo "remote 127.0.0.1 1194" >> /etc/openvpn/client-common.txt
+	else
+		echo "remote $IP $PORT" >> /etc/openvpn/client-common.txt
+	fi
+	echo "resolv-retry infinite
 nobind
 persist-key
 persist-tun
 remote-cert-tls server
 auth SHA512
-cipher AES-256-CBC
+cipher $CIPHER
 comp-lzo
 setenv opt block-outside-dns
 key-direction 1
-verb 3" > /etc/openvpn/client-common.txt
+reneg-sec $RENEGKEY
+verb 3" >> /etc/openvpn/client-common.txt
+	if [[ $SSL=1 ]]; then
+		echo "client = yes
+debug = 7
+[openvpn]
+accept = 127.0.0.1:1194
+connect = $IP:$PORT
+verify = 2
+CAfile = /etc/stunnel/stunnel.crt
+TIMEOUTclose = 1000
+session=300
+stack=65536
+sslVersion=TLSv1.2" > /etc/stunnel/stunnel-client.conf
+	cp /etc/stunnel/stunnel-client.conf $HOME/stunnel.conf
+	cp /etc/openvpn/ca.crt $HOME/stunnel.crt
+	fi
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
 	echo "Finished!"
 	echo
-	echo "Your client configuration is available at:" ~/"$CLIENT.ovpn"
+	echo "Your client configuration is available at: ~/$CLIENT.ovpn"
+	if [[ $SSL=1 ]]; then
+		echo "~/stunnel.crt and ~/stunnel.conf."
+	fi
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
