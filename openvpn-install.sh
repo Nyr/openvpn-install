@@ -149,7 +149,8 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
 				if [[ "$OS" = 'debian' ]]; then
-					apt remove --purge openvpn stunnel4 -y
+					apt purge openvpn stunnel4 -y
+					apt autoremove --purge -y
 				else
 					yum remove openvpn stunnel4 -y
 				fi
