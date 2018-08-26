@@ -41,19 +41,19 @@ fi
 
 newclient () {
 	# Generates the custom client.ovpn
-	cp /etc/openvpn/server/client-common.txt ~/$1.ovpn
-	echo "<ca>" >> ~/$1.ovpn
-	cat /etc/openvpn/server/easy-rsa/pki/ca.crt >> ~/$1.ovpn
-	echo "</ca>" >> ~/$1.ovpn
-	echo "<cert>" >> ~/$1.ovpn
-	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/$1.crt >> ~/$1.ovpn
-	echo "</cert>" >> ~/$1.ovpn
-	echo "<key>" >> ~/$1.ovpn
-	cat /etc/openvpn/server/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
-	echo "</key>" >> ~/$1.ovpn
-	echo "<tls-auth>" >> ~/$1.ovpn
-	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/ta.key >> ~/$1.ovpn
-	echo "</tls-auth>" >> ~/$1.ovpn
+	cp /etc/openvpn/server/client-common.txt ~/"$1.ovpn"
+	echo "<ca>" >> ~/"$1.ovpn"
+	cat /etc/openvpn/server/easy-rsa/pki/ca.crt >> ~/"$1.ovpn"
+	echo "</ca>" >> ~/"$1.ovpn"
+	echo "<cert>" >> ~/"$1.ovpn"
+	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/"$1.crt" >> ~/"$1.ovpn"
+	echo "</cert>" >> ~/"$1.ovpn"
+	echo "<key>" >> ~/"$1.ovpn"
+	cat /etc/openvpn/server/easy-rsa/pki/private/$1.key >> ~/"$1.ovpn"
+	echo "</key>" >> ~/"$1.ovpn"
+	echo "<tls-auth>" >> ~/"$1.ovpn"
+	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/ta.key >> ~/"$1.ovpn"
+	echo "</tls-auth>" >> ~/"$1.ovpn"
 }
 
 if [[ -e /etc/openvpn/server/server.conf ]]; then
@@ -72,10 +72,9 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			1) 
 			echo
 			echo "Tell me a name for the client certificate."
-			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/server/easy-rsa/
-			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full $CLIENT nopass
+			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$CLIENT" nopass
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo
@@ -104,11 +103,11 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			read -p "Do you really want to revoke access for client $CLIENT? [y/N]: " -e REVOKE
 			if [[ "$REVOKE" = 'y' || "$REVOKE" = 'Y' ]]; then
 				cd /etc/openvpn/server/easy-rsa/
-				./easyrsa --batch revoke $CLIENT
+				./easyrsa --batch revoke "$CLIENT"
 				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-				rm -f pki/reqs/$CLIENT.req
-				rm -f pki/private/$CLIENT.key
-				rm -f pki/issued/$CLIENT.crt
+				rm -f "pki/reqs/$CLIENT.req"
+				rm -f "pki/private/$CLIENT.key"
+				rm -f "pki/issued/$CLIENT.crt"
 				rm -f /etc/openvpn/server/crl.pem
 				cp /etc/openvpn/server/easy-rsa/pki/crl.pem /etc/openvpn/server/crl.pem
 				# CRL is read with each client connection, when OpenVPN is dropped to nobody
@@ -207,7 +206,6 @@ else
 	read -p "DNS [1-5]: " -e -i 1 DNS
 	echo
 	echo "Finally, tell me your name for the client certificate."
-	echo "Please, use one word only, no special characters."
 	read -p "Client name: " -e -i client CLIENT
 	echo
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
@@ -233,7 +231,7 @@ else
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
 	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-server-full server nopass
-	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full $CLIENT nopass
+	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$CLIENT" nopass
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
