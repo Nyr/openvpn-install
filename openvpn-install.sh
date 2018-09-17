@@ -65,13 +65,23 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 		echo "   4) Exit"
 		read -p "Select an option [1-4]: " option
 		case $option in
-			1) 
+			1)
 			echo
+			read -p "Do you want create user with password ? (y/n)" -e PASSWORD
+			while [[ $PASSWORD != "y" && $PASSWORD != "n" ]]
+			do
+				read -p "Please type only y or n (For Yes or No) : " -e PASSWORD
+			done
 			echo "Tell me a name for the client certificate."
 			echo "Please, use one word only, no special characters."
 			read -p "Client name: " -e CLIENT
 			cd /etc/openvpn/easy-rsa/
-			./easyrsa build-client-full $CLIENT nopass
+			if [ $PASSWORD == "n" ]
+			then
+				./easyrsa build-client-full $CLIENT nopass
+			else
+				./easyrsa build-client-full $CLIENT
+			fi
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo
@@ -117,7 +127,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			fi
 			exit
 			;;
-			3) 
+			3)
 			echo
 			read -p "Do you really want to remove OpenVPN? [y/N]: " -e REMOVE
 			if [[ "$REMOVE" = 'y' || "$REMOVE" = 'Y' ]]; then
@@ -179,7 +189,7 @@ else
 	# Autodetect IP address and pre-fill for the user
 	IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 	read -p "IP address: " -e -i $IP IP
-	# If $IP is a private IP address, the server must be behind NAT
+	# If $IP is a private IP address, the server must be behind NAT
 	if echo "$IP" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
@@ -191,10 +201,10 @@ else
 	echo "   2) TCP"
 	read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
 	case $PROTOCOL in
-		1) 
+		1)
 		PROTOCOL=udp
 		;;
-		2) 
+		2)
 		PROTOCOL=tcp
 		;;
 	esac
