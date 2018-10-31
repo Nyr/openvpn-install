@@ -266,6 +266,7 @@ key server.key
 dh dh.pem
 auth SHA512
 tls-auth ta.key 0
+float
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
