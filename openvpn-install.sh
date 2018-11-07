@@ -246,6 +246,7 @@ else
 	# Generate key for tls-auth
 	openvpn --genkey --secret /etc/openvpn/ta.key
 	# Create the DH parameters file using the predefined ffdhe2048 group
+	# See https://wiki.mozilla.org/Security/Server_Side_TLS#Pre-defined_DHE_groups
 	echo '-----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
 +8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a
