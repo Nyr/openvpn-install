@@ -13,7 +13,8 @@ Once it ends, you can run it again to add more users, remove some of them or eve
 ### Docker Installation
 Run the script and follow the assistant:
 
-`docker run -it \
+```
+docker run -it \
 --name openvpn \
 --restart always \
 --cap-add=NET_ADMIN \
@@ -21,7 +22,7 @@ Run the script and follow the assistant:
 --device=/dev/net/tun \
 -p 1194:1194/udp \
 mehran/openvpn`
-
+```
 * You can change Port to any.
 
 ### I want to run my own VPN but don't have a server for that
