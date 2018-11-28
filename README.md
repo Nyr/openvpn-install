@@ -21,7 +21,7 @@ docker run -it \
 --privileged \
 --device=/dev/net/tun \
 -p 1194:1194/udp \
-mehran/openvpn`
+mehran/openvpn
 ```
 * You can change Port to any.
 
