@@ -13,6 +13,8 @@ Once it ends, you can run it again to add more users, remove some of them or eve
 ### Docker Installation
 Run the script and follow the assistant:
 
+1) create Container
+
 ```
 docker run -it \
 --name openvpn \
@@ -22,6 +24,10 @@ docker run -it \
 --device=/dev/net/tun \
 -p 1194:1194/udp \
 mehran/openvpn
+ ```
+2) in Container :
+```
+bash openvpn-install.sh
 ```
 * You can change Port to any.
 
