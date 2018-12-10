@@ -30,8 +30,14 @@ elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	OS=centos
 	GROUPNAME=nobody
 	RCLOCAL='/etc/rc.d/rc.local'
+elif [[ -e /etc/alpine-release ]]; then
+  OS=alpine
+  GROUPNAME=nogroup
+  RCLOCAL='/etc/rc.local'
+  echo "You are using Alpine! Congrats!"
 else
-	echo "Looks like you aren't running this installer on Debian, Ubuntu or CentOS"
+	echo "Looks like you aren't running this installer on Debian, Ubuntu, CentOS, or Alpine 86 Dec  9 14:42 yarn.lock
+root@sidekick:/var/lib/lxd/conta"
 	exit
 fi
 
@@ -148,7 +154,9 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
-				if [[ "$OS" = 'debian' ]]; then
+        if [[ "$OS" = 'alpine' ]]; then 
+          apk del --purge openvpn
+				elif [[ "$OS" = 'debian' ]]; then
 					apt-get remove --purge -y openvpn
 				else
 					yum remove openvpn -y
@@ -179,7 +187,7 @@ else
 	# Autodetect IP address and pre-fill for the user
 	IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
 	read -p "IP address: " -e -i $IP IP
-	# If $IP is a private IP address, the server must be behind NAT
+	# If $IP is a private IP address, the server must be behind NAT
 	if echo "$IP" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
@@ -197,6 +205,10 @@ else
 		2) 
 		PROTOCOL=tcp
 		;;
+    *)
+    echo "Unknown Protocol, exiting"
+    exit
+    ;;
 	esac
 	echo
 	echo "What port do you want OpenVPN listening to?"
@@ -216,7 +228,10 @@ else
 	echo
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
 	read -n1 -r -p "Press any key to continue..."
-	if [[ "$OS" = 'debian' ]]; then
+  if [[ "$OS" = 'alpine' ]]; then
+    apk update
+    apk add openvpn iptables openssl ca-certificates
+	elif [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
 	else
@@ -260,12 +275,12 @@ proto $PROTOCOL
 dev tun
 sndbuf 0
 rcvbuf 0
-ca ca.crt
-cert server.crt
-key server.key
-dh dh.pem
+ca /etc/openvpn/ca.crt
+cert /etc/openvpn/server.crt
+key /etc/openvpn/server.key
+dh /etc/openvpn/dh.pem
 auth SHA512
-tls-auth ta.key 0
+tls-auth /etc/openvpn/ta.key 0
 topology subnet
 server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
@@ -310,7 +325,7 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
-crl-verify crl.pem" >> /etc/openvpn/server.conf
+crl-verify /etc/openvpn/crl.pem" >> /etc/openvpn/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
 	# Enable without waiting for a reboot or service restart
@@ -329,7 +344,7 @@ crl-verify crl.pem" >> /etc/openvpn/server.conf
 		firewall-cmd --permanent --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 	else
 		# Needed to use rc.local with some systemd distros
-		if [[ "$OS" = 'debian' && ! -e $RCLOCAL ]]; then
+		if [[ ( "$OS" = 'debian' || "$OS" = 'alpine' ) && ! -e $RCLOCAL ]]; then
 			echo '#!/bin/sh -e
 exit 0' > $RCLOCAL
 		fi
@@ -358,7 +373,11 @@ exit 0' > $RCLOCAL
 		semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
 	fi
 	# And finally, restart OpenVPN
-	if [[ "$OS" = 'debian' ]]; then
+  if [[ "$OS" = 'alpine' ]]; then
+    ln -s /etc/openvpn/server.conf /etc/openvpn/openvpn.conf
+    service openvpn restart
+    rc-update add openvpn
+	elif [[ "$OS" = 'debian' ]]; then
 		# Little hack to check for systemd
 		if pgrep systemd-journal; then
 			systemctl restart openvpn@server.service
@@ -374,7 +393,8 @@ exit 0' > $RCLOCAL
 			chkconfig openvpn on
 		fi
 	fi
-	# If the server is behind a NAT, use the correct IP address
+
+ 	# If the server is behind a NAT, use the correct IP address
 	if [[ "$PUBLICIP" != "" ]]; then
 		IP=$PUBLICIP
 	fi
