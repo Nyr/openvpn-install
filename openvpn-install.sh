@@ -240,6 +240,9 @@ else
 	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full $CLIENT nopass
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
+	csplit -f /etc/openvpn/easy-rsa/pki/issued/cert. /etc/openvpn/easy-rsa/pki/issued/server.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+ 	rm /etc/openvpn/easy-rsa/pki/issued/cert.00
+ 	mv /etc/openvpn/easy-rsa/pki/issued/cert.01 /etc/openvpn/easy-rsa/pki/issued/server.crt
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn
 	# CRL is read with each client connection, when OpenVPN is dropped to nobody
 	chown nobody:$GROUPNAME /etc/openvpn/crl.pem
