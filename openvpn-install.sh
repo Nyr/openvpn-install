@@ -4,6 +4,11 @@
 #
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
+if [[ -z $CLIENT_PROFILES ]]; then
+  CLIENT_PROFILES=~/
+else
+  CLIENT_PROFILES=$(echo $CLIENT_PROFILES | sed 's/\/$//')/
+fi
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
@@ -37,19 +42,19 @@ fi
 
 newclient () {
 	# Generates the custom client.ovpn
-	cp /etc/openvpn/client-common.txt ~/$1.ovpn
-	echo "<ca>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/ca.crt >> ~/$1.ovpn
-	echo "</ca>" >> ~/$1.ovpn
-	echo "<cert>" >> ~/$1.ovpn
-	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/easy-rsa/pki/issued/$1.crt >> ~/$1.ovpn
-	echo "</cert>" >> ~/$1.ovpn
-	echo "<key>" >> ~/$1.ovpn
-	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> ~/$1.ovpn
-	echo "</key>" >> ~/$1.ovpn
-	echo "<tls-auth>" >> ~/$1.ovpn
-	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/ta.key >> ~/$1.ovpn
-	echo "</tls-auth>" >> ~/$1.ovpn
+	cp /etc/openvpn/client-common.txt $CLIENT_PROFILES$1.ovpn
+	echo "<ca>" >> $CLIENT_PROFILES$1.ovpn
+	cat /etc/openvpn/easy-rsa/pki/ca.crt >> $CLIENT_PROFILES$1.ovpn
+	echo "</ca>" >> $CLIENT_PROFILES$1.ovpn
+	echo "<cert>" >> $CLIENT_PROFILES$1.ovpn
+	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/easy-rsa/pki/issued/$1.crt >> $CLIENT_PROFILES$1.ovpn
+	echo "</cert>" >> $CLIENT_PROFILES$1.ovpn
+	echo "<key>" >> $CLIENT_PROFILES$1.ovpn
+	cat /etc/openvpn/easy-rsa/pki/private/$1.key >> $CLIENT_PROFILES$1.ovpn
+	echo "</key>" >> $CLIENT_PROFILES$1.ovpn
+	echo "<tls-auth>" >> $CLIENT_PROFILES$1.ovpn
+	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/ta.key >> $CLIENT_PROFILES$1.ovpn
+	echo "</tls-auth>" >> $CLIENT_PROFILES$1.ovpn
 }
 
 if [[ -e /etc/openvpn/server.conf ]]; then
@@ -75,7 +80,7 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 			# Generates the custom client.ovpn
 			newclient "$CLIENT"
 			echo
-			echo "Client $CLIENT added, configuration is available at:" ~/"$CLIENT.ovpn"
+			echo "Client $CLIENT added, configuration is available at:" "$CLIENT_PROFILES$CLIENT.ovpn"
 			exit
 			;;
 			2)
@@ -396,10 +401,10 @@ setenv opt block-outside-dns
 key-direction 1
 verb 3" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
-	newclient "$CLIENT"
+	newclient "$CLIENT_PROFILES$CLIENT"
 	echo
 	echo "Finished!"
 	echo
-	echo "Your client configuration is available at:" ~/"$CLIENT.ovpn"
+	echo "Your client configuration is available at:" "$CLIENT_PROFILES$CLIENT.ovpn"
 	echo "If you want to add more clients, you simply need to run this script again!"
 fi
