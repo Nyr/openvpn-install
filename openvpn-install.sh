@@ -134,10 +134,10 @@ if [[ -e /etc/openvpn/server.conf ]]; then
 					iptables -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 					sed -i '/iptables -t nat -A POSTROUTING -s 10.8.0.0\/24 ! -d 10.8.0.0\/24 -j SNAT --to /d' $RCLOCAL
 					if iptables -L -n | grep -qE '^ACCEPT'; then
-						iptables -D INPUT -p $PROTOCOL --dport $PORT -j ACCEPT
+						iptables -D INPUT -p $PROTOCOL -m $PROTOCOL --dport $PORT -j ACCEPT
 						iptables -D FORWARD -s 10.8.0.0/24 -j ACCEPT
 						iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-						sed -i "/iptables -I INPUT -p $PROTOCOL --dport $PORT -j ACCEPT/d" $RCLOCAL
+						sed -i "/iptables -I INPUT -p $PROTOCOL -m $PROTOCOL --dport $PORT -j ACCEPT/d" $RCLOCAL
 						sed -i "/iptables -I FORWARD -s 10.8.0.0\/24 -j ACCEPT/d" $RCLOCAL
 						sed -i "/iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT/d" $RCLOCAL
 					fi
@@ -338,10 +338,10 @@ exit 0' > $RCLOCAL
 			# If iptables has at least one REJECT rule, we asume this is needed.
 			# Not the best approach but I can't think of other and this shouldn't
 			# cause problems.
-			iptables -I INPUT -p $PROTOCOL --dport $PORT -j ACCEPT
+			iptables -I INPUT -p $PROTOCOL -m $PROTOCOL --dport $PORT -j ACCEPT
 			iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT
 			iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-			sed -i "1 a\iptables -I INPUT -p $PROTOCOL --dport $PORT -j ACCEPT" $RCLOCAL
+			sed -i "1 a\iptables -I INPUT -p $PROTOCOL -m $PROTOCOL --dport $PORT -j ACCEPT" $RCLOCAL
 			sed -i "1 a\iptables -I FORWARD -s 10.8.0.0/24 -j ACCEPT" $RCLOCAL
 			sed -i "1 a\iptables -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" $RCLOCAL
 		fi
