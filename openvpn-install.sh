@@ -207,6 +207,19 @@ else
 	echo "   5) Verisign"
 	read -p "DNS [1-5]: " -e -i 1 DNS
 	echo
+	echo "Do you want to allow concurrent connection from multiple clients with same common name?"
+	echo "   1) No"
+	echo "   2) Yes (not recommended)"
+	read -p "Duplicate CN [1-2]: " -e -i 1 DUPLICATE_CN
+	case $DUPLICATE_CN in
+		1) 
+		DUPLICATE_CN=no
+		;;
+		2) 
+		DUPLICATE_CN=yes
+		;;
+	esac
+	echo
 	echo "Finally, tell me your name for the client certificate."
 	echo "Please, use one word only, no special characters."
 	read -p "Client name: " -e -i client CLIENT
@@ -299,6 +312,9 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server.conf
 		echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server.conf
 		;;
 	esac
+	if [[ "$DUPLICATE_CN" = "yes" ]]; then
+		echo "duplicate-cn" >> /etc/openvpn/server.conf
+	fi
 	echo "keepalive 10 120
 cipher AES-256-CBC
 user nobody
