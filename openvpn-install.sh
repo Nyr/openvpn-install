@@ -4,6 +4,62 @@
 #
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
+usage()
+{
+cat << EOF
+usage: $0 options
+This script will setup your own VPN server in no more than a minute.
+OPTIONS:
+   -i VALUE   IP address
+   -p VALUE   Protocol
+   -P VALUE   PORT
+   -d VALUE   Type of DNS
+   -c VALUE   Client name
+   -y         Not asking press any key
+   -h         Display this help
+EOF
+}
+
+IP_ADDR=
+PROTOCOL=
+PORT=
+DNS=
+CLIENT=
+NOT_ASK=
+
+while getopts ":i:p:P:d:c:yh" OPTION
+do
+  case $OPTION in
+    h)
+      usage
+      exit 1
+      ;;
+    i)
+      IP_ADDR=$OPTARG
+      ;;
+    p)
+      PROTOCOL=$OPTARG
+      ;;
+    P)
+      PORT=$OPTARG
+      ;;
+    d)
+      DNS=$OPTARG
+      ;;
+    c)
+      CLIENT=$OPTARG
+      ;;
+    y)
+      NOT_ASK=1
+      ;;
+    ?)
+      usage
+      exit
+    ;;
+  esac
+done
+
+
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
@@ -171,11 +227,18 @@ else
 	echo "I need to ask you a few questions before starting the setup."
 	echo "You can leave the default options and just press enter if you are ok with them."
 	echo
-	echo "First, provide the IPv4 address of the network interface you want OpenVPN"
-	echo "listening to."
-	# Autodetect IP address and pre-fill for the user
-	IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
-	read -p "IP address: " -e -i $IP IP
+
+	if [ -z "$IP_ADDR" ]; then
+		echo "First, provide the IPv4 address of the network interface you want OpenVPN"
+		echo "listening to."
+		# Autodetect IP address and pre-fill for the user
+		IP=$(ip addr | grep 'inet' | grep -v inet6 | grep -vE '127\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | grep -oE '[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}' | head -1)
+		read -p "IP address: " -e -i $IP IP
+	else
+		IP=$IP_ADDR
+		echo "IP address: $IP_ADDR"
+	fi
+
 	# If $IP is a private IP address, the server must be behind NAT
 	if echo "$IP" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
@@ -183,10 +246,15 @@ else
 		read -p "Public IP address / hostname: " -e PUBLICIP
 	fi
 	echo
-	echo "Which protocol do you want for OpenVPN connections?"
-	echo "   1) UDP (recommended)"
-	echo "   2) TCP"
-	read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
+	
+	if [ -z "$PROTOCOL" ]; then
+		echo "Which protocol do you want for OpenVPN connections?"
+		echo "   1) UDP (recommended)"
+		echo "   2) TCP"
+		read -p "Protocol [1-2]: " -e -i 1 PROTOCOL
+	else
+		echo "Connections protocol: $PROTOCOL"
+	fi
 	case $PROTOCOL in
 		1) 
 		PROTOCOL=udp
@@ -196,23 +264,42 @@ else
 		;;
 	esac
 	echo
-	echo "What port do you want OpenVPN listening to?"
-	read -p "Port: " -e -i 1194 PORT
+	if [ -z "$PORT" ]; then
+		echo "What port do you want OpenVPN listening to?"
+		read -p "Port: " -e -i 1194 PORT
+	else
+		echo "Listening port: $PORT"
+	fi
 	echo
-	echo "Which DNS do you want to use with the VPN?"
-	echo "   1) Current system resolvers"
-	echo "   2) 1.1.1.1"
-	echo "   3) Google"
-	echo "   4) OpenDNS"
-	echo "   5) Verisign"
-	read -p "DNS [1-5]: " -e -i 1 DNS
+	
+	if [ -z "$DNS" ]; then
+		echo "Which DNS do you want to use with the VPN?"
+		echo "   1) Current system resolvers"
+		echo "   2) 1.1.1.1"
+		echo "   3) Google"
+		echo "   4) OpenDNS"
+		echo "   5) Verisign"
+		read -p "DNS [1-5]: " -e -i 1 DNS
+	else
+		echo "DNS type: $DNS"
+	fi
 	echo
-	echo "Finally, tell me your name for the client certificate."
-	echo "Please, use one word only, no special characters."
-	read -p "Client name: " -e -i client CLIENT
+
+	if [ -z "$CLIENT" ]; then
+		echo "Finally, tell me your name for the client certificate."
+		echo "Please, use one word only, no special characters."
+		read -p "Client name: " -e -i client CLIENT
+	else
+		echo "Client name: $CLIENT"
+	fi
+
 	echo
 	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
-	read -n1 -r -p "Press any key to continue..."
+
+	if [ -z "$NOT_ASK" ]; then
+		read -n1 -r -p "Press any key to continue..."
+	fi
+
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
 		apt-get install openvpn iptables openssl ca-certificates -y
