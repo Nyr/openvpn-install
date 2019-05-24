@@ -358,21 +358,9 @@ exit 0' > $RCLOCAL
 		semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
 	fi
 	# And finally, restart OpenVPN
-	if [[ "$OS" = 'debian' ]]; then
-		# Little hack to check for systemd
-		if pgrep systemd-journal; then
-			systemctl restart openvpn@server.service
-		else
-			/etc/init.d/openvpn restart
-		fi
-	else
-		if pgrep systemd-journal; then
-			systemctl restart openvpn@server.service
-			systemctl enable openvpn@server.service
-		else
-			service openvpn restart
-			chkconfig openvpn on
-		fi
+	systemctl restart openvpn@server.service
+	if [[ "$OS" = 'centos' ]]; then
+		systemctl enable openvpn@server.service
 	fi
 	# If the server is behind a NAT, use the correct IP address
 	if [[ "$PUBLICIP" != "" ]]; then
