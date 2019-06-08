@@ -6,7 +6,13 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ### Installation
 Run the script and follow the assistant:
 
-`git clone https://github.com/hewenhan/openvpn-install.git && ./openvpn-install/openvpn-install.sh`
+
+#### install git
+`sudo apt install git`
+
+
+#### clone code file and excute
+`git clone https://github.com/hewenhan/openvpn-install.git && sudo ./openvpn-install/openvpn-install.sh`
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
