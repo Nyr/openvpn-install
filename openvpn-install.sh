@@ -368,7 +368,8 @@ auth SHA512
 cipher AES-256-GCM
 setenv opt block-outside-dns
 key-direction 1
-verb 3" > /etc/openvpn/client-common.txt
+verb 3
+redirect-gateway autolocal" > /etc/openvpn/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
 	echo
