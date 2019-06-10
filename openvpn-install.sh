@@ -189,7 +189,26 @@ else
 	esac
 	echo
 	echo "What port do you want OpenVPN listening to?"
-	read -p "Port: " -e -i 1194 PORT
+	echo "   1) 1194 (openvpn default) !DANGERS!"
+	echo "   2) Random Port (40000 - 60000)"
+	echo "   3) 443 (recommended) Confusing HTTPS traffic"
+	echo "   4) Custom"
+	read -p "Port [1-3]: " -e -i 3 PORT
+	case $PORT in
+		1) 
+		PORT=1194
+		;;
+		2) 
+		PORT=$(shuf -i40000-60000 -n1)
+		echo "Random Port: $PORT"
+		;;
+		3) 
+		PORT=443
+		;;
+		4) 
+		read -rp "Custom port [1-65535]: " -e -i 443 PORT
+		;;
+	esac
 	echo
 	echo "Which DNS do you want to use with the VPN?"
 	echo "   1) Current system resolvers"
