@@ -26,5 +26,5 @@ Changed cipher type and lan ip range.
 #### Tips:
 
 The system of server and client must be supported AES-256-GCM. I try successed in Ubuntu 19.04 from google cloud.
-And the version of ubuntu 18.04TLS is not supported, need install libsodium.
+And 18.04TLS.
 I didn't try other system.
