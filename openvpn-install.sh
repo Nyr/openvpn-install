@@ -226,7 +226,7 @@ else
 	read -n1 -r -p "Press any key to continue..."
 	if [[ "$OS" = 'debian' ]]; then
 		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		apt-get install openvpn iptables openssl ca-certificates libsodium23 libsodium-dev -y
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
