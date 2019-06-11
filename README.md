@@ -6,8 +6,6 @@ This script will let you setup your own VPN server in no more than a minute, eve
 ### Installation
 Run the script and follow the assistant:
 
-#### if server system is version of ubuntu 18.04LST then neet install libsodium to support AES-256-GCM
-`sudo apt install libsodium23 libsodium-dev`
 
 #### install git
 `sudo apt install git`
