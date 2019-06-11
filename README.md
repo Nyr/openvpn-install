@@ -10,7 +10,7 @@ Run the script and follow the assistant:
 `sudo apt install libsodium23 libsodium-dev`
 
 #### install git
-`sudo apt install git `
+`sudo apt install git`
 
 
 #### clone code file and excute
