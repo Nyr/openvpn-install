@@ -11,7 +11,7 @@ Run the script and follow the assistant:
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
 ### I want to run my own VPN but don't have a server for that
-You can get a VPS from just $1/month at [VirMach](https://billing.virmach.com/aff.php?aff=4109&url=billing.virmach.com/cart.php?gid=1).
+You can get a VPS from just $1/month at [VirMach](https://billing.virmach.com/aff.php?aff=4109&url=billing.virmach.com/cart.php?gid=18).
 
 ### Donations
 
