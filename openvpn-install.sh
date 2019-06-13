@@ -130,9 +130,9 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 				if pgrep firewalld; then
 					IP=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24 -j SNAT --to ' | cut -d " " -f 10)
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
-					firewall-cmd --zone=public --remove-port=$PORT/$PROTOCOL
+					firewall-cmd --remove-port=$PORT/$PROTOCOL
 					firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
-					firewall-cmd --permanent --zone=public --remove-port=$PORT/$PROTOCOL
+					firewall-cmd --permanent --remove-port=$PORT/$PROTOCOL
 					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
 					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
@@ -316,9 +316,9 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# reload.
 		# We don't use --add-service=openvpn because that would only work with
 		# the default port and protocol.
-		firewall-cmd --zone=public --add-port=$PORT/$PROTOCOL
+		firewall-cmd --add-port=$PORT/$PROTOCOL
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
-		firewall-cmd --permanent --zone=public --add-port=$PORT/$PROTOCOL
+		firewall-cmd --permanent --add-port=$PORT/$PROTOCOL
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
 		# Set NAT for the VPN subnet
 		firewall-cmd --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
@@ -346,7 +346,11 @@ WantedBy=multi-user.target" > /etc/systemd/system/openvpn-iptables.service
 	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
 		# Install semanage if not already present
 		if ! hash semanage 2>/dev/null; then
-			yum install policycoreutils-python -y
+			if grep -qs "CentOS Linux release 7" "/etc/centos-release"; then
+				yum install policycoreutils-python -y
+			else
+				yum install policycoreutils-python-utils -y
+			fi
 		fi
 		semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
 	fi
