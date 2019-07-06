@@ -39,6 +39,12 @@ else
 	exit
 fi
 
+# make sure --now is supported
+NOWFLAG="--now"
+if [[ "$(systemctl --now >/dev/null 2>&1;echo $?)" != "0" ]]; then
+    NOWFLAG=""
+fi
+
 newclient () {
 	# Generates the custom client.ovpn
 	cp /etc/openvpn/server/client-common.txt ~/$1.ovpn
@@ -137,13 +143,13 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $IP
 				else
-					systemctl disable --now openvpn-iptables.service
+					systemctl disable $NOWFLAG openvpn-iptables.service
 					rm -f /etc/systemd/system/openvpn-iptables.service
 				fi
 				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
 					semanage port -d -t openvpn_port_t -p $PROTOCOL $PORT
 				fi
-				systemctl disable --now openvpn-server@server.service
+				systemctl disable $NOWFLAG openvpn-server@server.service
 				rm -rf /etc/openvpn/server
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				if [[ "$OS" = 'debian' ]]; then
@@ -340,7 +346,7 @@ ExecStop=/sbin/iptables -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEP
 RemainAfterExit=yes
 [Install]
 WantedBy=multi-user.target" > /etc/systemd/system/openvpn-iptables.service
-		systemctl enable --now openvpn-iptables.service
+		systemctl enable $NOWFLAG openvpn-iptables.service
 	fi
 	# If SELinux is enabled and a custom port was selected, we need this
 	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$PORT" != '1194' ]]; then
@@ -355,7 +361,7 @@ WantedBy=multi-user.target" > /etc/systemd/system/openvpn-iptables.service
 		semanage port -a -t openvpn_port_t -p $PROTOCOL $PORT
 	fi
 	# And finally, enable and start the OpenVPN service
-	systemctl enable --now openvpn-server@server.service
+	systemctl enable $NOWFLAG openvpn-server@server.service
 	# If the server is behind a NAT, use the correct IP address
 	if [[ "$PUBLICIP" != "" ]]; then
 		IP=$PUBLICIP
