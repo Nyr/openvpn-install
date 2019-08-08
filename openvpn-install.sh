@@ -180,7 +180,7 @@ else
 	        # Autodetect IP address and pre-fill for the user
 	        PUBLICIP=`dig +short myip.opendns.com @resolver1.opendns.com`
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
-		read -p "Public IP address / hostname: " -e PUBLICIP
+		read -p "Public IP address / hostname: " -e -i $PUBLICIP PUBLICIP
 
 	fi
 	echo
