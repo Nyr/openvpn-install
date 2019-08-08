@@ -179,7 +179,7 @@ else
 	if echo "$IP" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
-		read -p "Public IP address / hostname: " -e PUBLICIP
+		IP=`dig +short myip.opendns.com @resolver1.opendns.com`
 	fi
 	echo
 	echo "Which protocol do you want for OpenVPN connections?"
