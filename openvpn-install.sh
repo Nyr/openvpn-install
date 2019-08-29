@@ -42,6 +42,16 @@ fi
 newclient () {
 	# Generates the custom client.ovpn
 	cp /etc/openvpn/server/client-common.txt ~/$1.ovpn
+	read -p "Do you want the new client to be prompted for user and password? [y/N]: "
+	REPLY=$(echo $REPLY | tr '[:upper:]' '[:lower:]')
+	if [ $REPLY = "y" ]
+	then
+		echo "auth-user-pass" >> ~/$1.ovpn
+		echo "The user will be prompted for user and password"
+		#echo -e "NOTE: To make the server actually check given credentials\nthrough PAM, you have to add the following line to server.conf:"
+		#echo -e "\nplugin /usr/lib64/openvpn/plugins/openvpn-plugin-auth-pam.so login\n"
+
+	fi
 	echo "<ca>" >> ~/$1.ovpn
 	cat /etc/openvpn/server/easy-rsa/pki/ca.crt >> ~/$1.ovpn
 	echo "</ca>" >> ~/$1.ovpn
