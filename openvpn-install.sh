@@ -259,7 +259,6 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
         # add checkpsw.sh
         cat > /etc/openvpn/checkpsw.sh << 'EOF'
-$ cat checkpsw.sh
 #!/bin/sh
 ###########################################################
 # checkpsw.sh (C) 2004 Mathias Sundman <mathias@openvpn.se>
