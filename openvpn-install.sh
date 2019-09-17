@@ -257,6 +257,49 @@ YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
 7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
 ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
+        # add checkpsw.sh
+        cat > /etc/openvpn/checkpsw.sh << 'EOF'
+$ cat checkpsw.sh
+#!/bin/sh
+###########################################################
+# checkpsw.sh (C) 2004 Mathias Sundman <mathias@openvpn.se>
+#
+# This script will authenticate OpenVPN users against
+# a plain text file. The passfile should simply contain
+# one row per user with the username first followed by
+# one or more space(s) or tab(s) and then the password.
+
+PASSFILE="/etc/openvpn/userfile.sh"
+LOG_FILE="/etc/openvpn/openvpn-password.log"
+TIME_STAMP=`date "+%Y-%m-%d %T"`
+
+###########################################################
+
+if [ ! -r "${PASSFILE}" ]; then
+    echo "${TIME_STAMP}: Could not open password file \"${PASSFILE}\" for reading." >> ${LOG_FILE}
+    exit 1
+fi
+
+CORRECT_PASSWORD=`awk '!/^;/&&!/^#/&&$1=="'${username}'"{print $2;exit}' ${PASSFILE}`
+
+if [ "${CORRECT_PASSWORD}" = "" ]; then
+    echo "${TIME_STAMP}: User does not exist: username=\"${username}\", password=\"${password}\"." >> ${LOG_FILE}
+    exit 1
+fi
+
+if [ "${password}" = "${CORRECT_PASSWORD}" ]; then
+      echo "${TIME_STAMP}: Successful authentication: username=\"${username}\"." >> ${LOG_FILE}
+      exit 0
+fi
+
+echo "${TIME_STAMP}: Incorrect password: username=\"${username}\", password=\"${password}\"." >> ${LOG_FILE}
+exit 1
+
+EOF
+	chmod +x  /etc/openvpn/checkpsw.sh
+        # add userfile.sh
+        touch /etc/openvpn/userfile.sh
+        chown nobody.nogroup /etc/openvpn/userfile.sh
 	# Generate server.conf
 	echo "port $PORT
 proto $PROTOCOL
@@ -313,7 +356,12 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
-crl-verify crl.pem" >> /etc/openvpn/server/server.conf
+crl-verify crl.pem
+auth-user-pass-verify /etc/openvpn/checkpsw.sh via-env
+verify-client-cert
+username-as-common-name
+script-security 3
+" >> /etc/openvpn/server/server.conf
 	# Enable net.ipv4.ip_forward for the system
 	echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
 	# Enable without waiting for a reboot or service restart
@@ -378,6 +426,7 @@ resolv-retry infinite
 nobind
 persist-key
 persist-tun
+auth-user-pass
 remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
