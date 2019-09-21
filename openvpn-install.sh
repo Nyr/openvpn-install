@@ -5,6 +5,21 @@
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
 
+if grep -qs "14.04" "/etc/os-release"; then
+	echo "Ubuntu 14.04 is too old and not supported"
+	exit
+fi
+
+if grep -qs "jessie" "/etc/os-release"; then
+	echo "Debian 8 is too old and not supported"
+	exit
+fi
+
+if grep -qs "CentOS release 6" "/etc/redhat-release"; then
+	echo "CentOS 6 is too old and not supported"
+	exit
+fi
+
 if grep -qs "Ubuntu 16.04" "/etc/os-release"; then
 	echo 'Ubuntu 16.04 is no longer supported in the current version of openvpn-install
 Use an older version if Ubuntu 16.04 support is needed: https://git.io/vpn1604'
