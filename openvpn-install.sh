@@ -43,6 +43,13 @@ You need to enable TUN before running this script"
 	exit
 fi
 
+if ! iptables -t nat -nL &>/dev/null; then
+	echo "Unable to initialize the iptables/netfilter NAT table, setup can't continue.
+If you are a LowEndSpirit customer, see here: https://git.io/nfLES
+If you are getting this message on any other provider, ask them for support."
+	exit
+fi
+
 if [[ -e /etc/debian_version ]]; then
 	os="debian"
 	group_name="nogroup"
