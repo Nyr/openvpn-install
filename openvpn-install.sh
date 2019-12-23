@@ -45,8 +45,8 @@ fi
 
 if ! iptables -t nat -nL &>/dev/null; then
 	echo "Unable to initialize the iptables/netfilter NAT table, setup can't continue.
-If you are a LowEndSpirit customer, see here: https://git.io/nfLES
-If you are getting this message on any other provider, ask them for support."
+Make sure that your system has iptables/netfilter available.
+If using OpenVZ, ask your provider to enable full netfilter support."
 	exit
 fi
 
