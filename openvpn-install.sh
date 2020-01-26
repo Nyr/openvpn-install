@@ -304,7 +304,9 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/server/easy-rsa/
 	# Create the PKI, set up the CA and the server and client certificates
+	dd if=/dev/urandom of=/etc/openvpn/server/easy-rsa/pki/.rnd bs=256 count=1
 	./easyrsa init-pki
+	dd if=/dev/urandom of=/etc/openvpn/server/easy-rsa/pki/.rnd bs=256 count=1
 	./easyrsa --batch build-ca nopass
 	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-server-full server nopass
 	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
