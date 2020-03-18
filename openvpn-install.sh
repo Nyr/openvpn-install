@@ -292,7 +292,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	else
 		# Else, the distro is CentOS
 		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates -y
+		yum install openvpn iptables openssl ca-certificates tar -y
 	fi
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.5/EasyRSA-nix-3.0.5.tgz'
