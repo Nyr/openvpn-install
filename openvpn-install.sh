@@ -298,7 +298,9 @@ status openvpn-status.log
 verb 3
 crl-verify crl.pem
 plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn" >> /etc/openvpn/server.conf
-	echo "auth required /lib/security/pam_google_authenticator.so secret=/etc/openvpn/google-authenticator/\${USER} user=gauth forward_pass" > /etc/pam.d/openvpn
+        mkdir -p /usr/lib/openvpn/
+        ln -s /usr/lib/x86_64-linux-gnu/openvpn/plugins/openvpn-plugin-auth-pam.so /usr/lib/openvpn/openvpn-plugin-auth-pam.so
+	echo "auth required /lib/x86_64-linux-gnu/security/pam_google_authenticator.so secret=/etc/openvpn/google-authenticator/\${USER} user=gauth forward_pass" > /etc/pam.d/openvpn
 	# Enable net.ipv4.ip_forward for the system
 	sed -i '/\<net.ipv4.ip_forward\>/c\net.ipv4.ip_forward=1' /etc/sysctl.conf
 	if ! grep -q "\<net.ipv4.ip_forward\>" /etc/sysctl.conf; then
@@ -375,7 +377,6 @@ remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
 comp-lzo
-setenv opt block-outside-dns
 key-direction 1
 verb 3
 ns-cert-type server
