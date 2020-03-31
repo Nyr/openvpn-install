@@ -143,9 +143,6 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 				cd /etc/openvpn/server/easy-rsa/
 				./easyrsa --batch revoke "$client"
 				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-				rm -f pki/reqs/"$client".req
-				rm -f pki/private/"$client".key
-				rm -f pki/issued/"$client".crt
 				rm -f /etc/openvpn/server/crl.pem
 				cp /etc/openvpn/server/easy-rsa/pki/crl.pem /etc/openvpn/server/crl.pem
 				# CRL is read with each client connection, when OpenVPN is dropped to nobody
@@ -295,11 +292,11 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		yum install openvpn iptables openssl ca-certificates tar -y
 	fi
 	# Get easy-rsa
-	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.5/EasyRSA-nix-3.0.5.tgz'
+	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.7/EasyRSA-3.0.7.tgz'
 	wget -O ~/easyrsa.tgz "$easy_rsa_url" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$easy_rsa_url"
 	tar xzf ~/easyrsa.tgz -C ~/
-	mv ~/EasyRSA-3.0.5/ /etc/openvpn/server/
-	mv /etc/openvpn/server/EasyRSA-3.0.5/ /etc/openvpn/server/easy-rsa/
+	mv ~/EasyRSA-3.0.7/ /etc/openvpn/server/
+	mv /etc/openvpn/server/EasyRSA-3.0.7/ /etc/openvpn/server/easy-rsa/
 	chown -R root:root /etc/openvpn/server/easy-rsa/
 	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/server/easy-rsa/
