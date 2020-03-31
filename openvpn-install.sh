@@ -43,13 +43,6 @@ You need to enable TUN before running this script"
 	exit
 fi
 
-if ! iptables -t nat -nL &>/dev/null; then
-	echo "Unable to initialize the iptables/netfilter NAT table, setup can't continue.
-Make sure that your system has iptables/netfilter available.
-If using OpenVZ, ask your provider to enable full netfilter support."
-	exit
-fi
-
 if [[ -e /etc/debian_version ]]; then
 	os="debian"
 	group_name="nogroup"
