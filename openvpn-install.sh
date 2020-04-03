@@ -227,7 +227,7 @@ else
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
-		get_public_ip=$(wget -4qO- "http://whatismyip.akamai.com/" || curl -4Ls "http://whatismyip.akamai.com/")
+		get_public_ip=$(wget -4qO- "https://icanhazip.com" || curl -4Ls "https://icanhazip.com")
 		read -p "Public IPv4 address / hostname [$get_public_ip]: " public_ip
 		[ -z "$public_ip" ] && public_ip="$get_public_ip"
 	fi
