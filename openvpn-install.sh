@@ -90,7 +90,7 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			read -p "Select an option: " option
 		done
 		case "$option" in
-			1) 
+			1)
 			echo
 			echo "Tell me a name for the client certificate."
 			read -p "Client name: " unsanitized_client
@@ -148,7 +148,7 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			fi
 			exit
 			;;
-			3) 
+			3)
 			echo
 			read -p "Do you really want to remove OpenVPN? [y/N]: " remove
 			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
@@ -259,10 +259,10 @@ else
 		read -p "Protocol [1]: " protocol
 	done
 	case "$protocol" in
-		1|"") 
+		1|"")
 		protocol=udp
 		;;
-		2) 
+		2)
 		protocol=tcp
 		;;
 	esac
@@ -490,6 +490,58 @@ cipher AES-256-CBC
 ignore-unknown-option block-outside-dns
 block-outside-dns
 verb 3" > /etc/openvpn/server/client-common.txt
+	echo "Telegram support enables the server to send messages on a Telegram channel with a bot when clients connect/disconnect."
+	echo "If you want Telegram support, you'll need to create a bot and a group (instructions will be given) and have Python support on this server."
+	read -p "Do you want Telegram support ? [y/N] : " telegram_support
+	until [[ "$telegram_support" =~ ^[yYnN]*$ ]]; do
+		echo "$telegram_support: invalid selection."
+		read -p "Do you want Telegram support ? [y/N] : " telegram_support
+	done
+	if [[ "$telegram_support" =~ ^[yY]$ ]]; then
+		echo "In order to function properly, Telegram supports needs two sets of data: a bot token and a group id"
+		echo "How to create a bot and find the token"
+		echo "  1. Open a Telegram client"
+		echo "  2. Start a conversation with @BotFather"
+		echo "  3. Send the following command : /newbot"
+		echo "  4. Send the name of your bot (anything you want)"
+		echo "  5. Send the username of your bot (must be unique, and end with 'bot')"
+		echo "  6. The bot is created and the token to access the HTTP API is sent to you"
+		read -p "What is your bot token ? : " telegram_bot_token
+		echo "How to find the group id"
+		echo "  1. Create the group your want the bot to send messages to"
+		echo "  2. Add the bot to the group with its username (@username)"
+		echo "  3. Send the following message in the group : /my_id @username"
+		echo "  4. Go to https://api.telegram.org/bot<bot_token>/getUpdates and replace <bot_token> with yours"
+		echo "  5. In the JSON array, find the message/chat/id negative integer composed of 9 figures, this is your group ID"
+		read -p "What is the group ID ? : " telegram_group_id
+		touch /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
+		pip install python-telegram-bot
+		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-connect
+		echo 'import telegram' >> /usr/bin/ovpn-client-connect
+		echo 'import os' >> /usr/bin/ovpn-client-connect
+		echo "bot = telegram.Bot(token=\'$telegram_bot_token\')" >> /usr/bin/ovpn-client-connect
+		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-connect
+		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-connect
+		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-connect
+		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-connect
+		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* is connected (is *" + client_real_ip + "* and has *" + client_virtual_ip + "*)"' >> /usr/bin/ovpn-client-connect
+		echo "bot.send_message('-421685619', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-connect
+		echo '#!/usr/bin/env python' > /usr/bin/ovpn-client-disconnect
+		echo 'import telegram' >> /usr/bin/ovpn-client-disconnect
+		echo 'import os' >> /usr/bin/ovpn-client-disconnect
+		echo "bot = telegram.Bot(token=\'$telegram_bot_token\')" >> /usr/bin/ovpn-client-disconnect
+		echo "server_ip = os.popen('curl ifconfig.me').read()" >> /usr/bin/ovpn-client-disconnect
+		echo "client_name = str(os.getenv('common_name'))" >> /usr/bin/ovpn-client-disconnect
+		echo "client_real_ip = str(os.getenv('trusted_ip'))" >> /usr/bin/ovpn-client-disconnect
+		echo "client_virtual_ip = str(os.getenv('ifconfig_pool_remote_ip'))" >> /usr/bin/ovpn-client-disconnect
+		echo 'message = "*[OpenVPN Server : " + server_ip + "]* client *" + client_name + "* has disconnected (was *" + client_real_ip + "* and had *" + client_virtual_ip + "*")' >> /usr/bin/ovpn-client-disconnect
+		echo "bot.send_message('-421685619', message, parse_mode=telegram.ParseMode.MARKDOWN)" >> /usr/bin/ovpn-client-disconnect
+		chown nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
+		chmod +x nobody:root /usr/bin/ovpn-client-connect /usr/bin/ovpn-client-disconnect
+		echo "script-security 2" >> /etc/openvpn/server/server.conf
+		echo "client-connect /usr/bin/ovpn-client-connect" >> /etc/openvpn/server/server.conf
+		echo "client-disconnect /usr/bin/ovpn-client-disconnect" >> /etc/openvpn/server/server.conf
+	fi
 	# Enable and start the OpenVPN service
 	systemctl enable --now openvpn-server@server.service
 	# Generates the custom client.ovpn
