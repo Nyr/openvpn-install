@@ -152,9 +152,10 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "   2) 1.1.1.1"
 	echo "   3) Google"
 	echo "   4) OpenDNS"
-	echo "   5) Verisign"
+	echo "   5) NTT"
+	echo "   6) AdGuard"
 	read -p "DNS [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-5]$ ]]; do
+	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS [1]: " dns
 	done
@@ -260,8 +261,12 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server/server.conf
 		;;
 		5)
-			echo 'push "dhcp-option DNS 64.6.64.6"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 64.6.65.6"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 129.250.35.251"' >> /etc/openvpn/server/server.conf
+		;;
+		6)
+			echo 'push "dhcp-option DNS 176.103.130.130"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 176.103.130.131"' >> /etc/openvpn/server/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
