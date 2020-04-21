@@ -62,15 +62,15 @@ new_client () {
 	cat /etc/openvpn/server/easy-rsa/pki/ca.crt
 	echo "</ca>"
 	echo "<cert>"
-	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/"$1".crt
+	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt
 	echo "</cert>"
 	echo "<key>"
-	cat /etc/openvpn/server/easy-rsa/pki/private/"$1".key
+	cat /etc/openvpn/server/easy-rsa/pki/private/"$client".key
 	echo "</key>"
 	echo "<tls-crypt>"
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
 	echo "</tls-crypt>"
-	} > ~/"$1".ovpn
+	} > ~/"$client".ovpn
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
@@ -99,8 +99,14 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
-		get_public_ip=$(wget -4qO- "http://whatismyip.akamai.com/" || curl -4Ls "http://whatismyip.akamai.com/")
+		# Get public IP and sanitize with grep
+		get_public_ip=$(grep -oE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' <<< "$(wget -T 5 -t 1 -4qO- "https://checkip.amazonaws.com/" || curl -m 5 -4Ls "https://checkip.amazonaws.com/")")
 		read -p "Public IPv4 address / hostname [$get_public_ip]: " public_ip
+		# If the checkip service is unavailable and user didn't provide input, ask again
+		until [[ -n "$get_public_ip" || -n $public_ip ]]; do
+    		echo "Invalid input."
+			read -p "Public IPv4 address / hostname: " public_ip
+		done
 		[[ -z "$public_ip" ]] && public_ip="$get_public_ip"
 	fi
 	# If system has a single IPv6, it is selected automatically
@@ -142,7 +148,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "What port do you want OpenVPN listening to?"
 	read -p "Port [1194]: " port
 	until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
-		echo "$port: invalid selection."
+		echo "$port: invalid port."
 		read -p "Port [1194]: " port
 	done
 	[[ -z "$port" ]] && port="1194"
@@ -368,7 +374,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
 	systemctl enable --now openvpn-server@server.service
 	# Generates the custom client.ovpn
-	new_client "$client"
+	new_client
 	echo
 	echo "Finished!"
 	echo
@@ -402,7 +408,7 @@ else
 			cd /etc/openvpn/server/easy-rsa/
 			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
 			# Generates the custom client.ovpn
-			new_client "$client"
+			new_client
 			echo
 			echo "Client $client added, configuration is available at:" ~/"$client.ovpn"
 			exit
