@@ -5,27 +5,6 @@
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
 
-if grep -qs "14.04" /etc/os-release; then
-	echo "Ubuntu 14.04 is too old and not supported"
-	exit
-fi
-
-if grep -qs "jessie" /etc/os-release; then
-	echo "Debian 8 is too old and not supported"
-	exit
-fi
-
-if grep -qs "CentOS release 6" /etc/redhat-release; then
-	echo "CentOS 6 is too old and not supported"
-	exit
-fi
-
-if grep -qs "Ubuntu 16.04" /etc/os-release; then
-	echo 'Ubuntu 16.04 is no longer supported in the current version of openvpn-install
-Use an older version if Ubuntu 16.04 support is needed: https://git.io/vpn1604'
-	exit
-fi
-
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo "This script needs to be run with bash, not sh"
@@ -37,20 +16,50 @@ if [[ "$EUID" -ne 0 ]]; then
 	exit
 fi
 
-if [[ ! -e /dev/net/tun ]]; then
-	echo "The TUN device is not available
-You need to enable TUN before running this script"
+# Detect OS
+# $os_version variables aren't always in use, but are kept here for convenience
+if grep -qs "ubuntu" /etc/os-release; then
+	os="ubuntu"
+	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
+	group_name="nogroup"
+elif [[ -e /etc/debian_version ]]; then
+	os="debian"
+	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
+	group_name="nogroup"
+elif [[ -e /etc/centos-release ]]; then
+	os="centos"
+	os_version=$(grep -oE '[0-9]+' /etc/centos-release | head -1)
+	group_name="nobody"
+elif [[ -e /etc/fedora-release ]]; then
+	os="fedora"
+	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
+	group_name="nobody"
+else
+	echo "Looks like you aren't running this installer on Ubuntu, Debian, CentOS or Fedora"
 	exit
 fi
 
-if [[ -e /etc/debian_version ]]; then
-	os="debian"
-	group_name="nogroup"
-elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
-	os="centos"
-	group_name="nobody"
-else
-	echo "Looks like you aren't running this installer on Debian, Ubuntu or CentOS"
+if [[ "$os" == "ubuntu" && "$os_version" -lt 1804 ]]; then
+	echo "Ubuntu 18.04 or higher is required to use this installer
+This version of Ubuntu is too old and unsupported"
+	exit
+fi
+
+if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
+	echo "Debian 9 or higher is required to use this installer
+This version of Debian is too old and unsupported"
+	exit
+fi
+
+if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
+	echo "CentOS 7 or higher is required to use this installer
+This version of CentOS is too old and unsupported"
+	exit
+fi
+
+if [[ ! -e /dev/net/tun ]]; then
+	echo "The TUN device is not available
+You need to enable TUN before running this script"
 	exit
 fi
 
@@ -180,13 +189,15 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		echo "[Service]
 LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 	fi
-	if [[ "$os" = "debian" ]]; then
+	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
-		apt-get install openvpn iptables openssl ca-certificates -y
+		apt-get install -y openvpn iptables openssl ca-certificates
+	elif [[ "$os" = "centos" ]]; then
+		yum install -y epel-release
+		yum install -y openvpn iptables openssl ca-certificates tar
 	else
-		# Else, the distro is CentOS
-		yum install epel-release -y
-		yum install openvpn iptables openssl ca-certificates tar -y
+		# Else, OS must be Fedora
+		dnf install -y openvpn iptables openssl ca-certificates tar
 	fi
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.7/EasyRSA-3.0.7.tgz'
@@ -346,10 +357,10 @@ WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
 		# Install semanage if not already present
 		if ! hash semanage 2>/dev/null; then
-			if grep -qs "CentOS Linux release 7" "/etc/centos-release"; then
-				yum install policycoreutils-python -y
+			if [[ "$os_version" -eq 7 ]]; then
+				yum install -y policycoreutils-python
 			else
-				yum install policycoreutils-python-utils -y
+				yum install -y policycoreutils-python-utils
 			fi
 		fi
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
@@ -490,10 +501,11 @@ else
 				rm -rf /etc/openvpn/server
 				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
-				if [[ "$os" = "debian" ]]; then
+				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					apt-get remove --purge -y openvpn
 				else
-					yum remove openvpn -y
+					# Else, OS must be CentOS or Fedora
+					yum remove -y openvpn
 				fi
 				echo
 				echo "OpenVPN removed!"
