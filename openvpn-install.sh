@@ -26,6 +26,11 @@ Use an older version if Ubuntu 16.04 support is needed: https://git.io/vpn1604'
 	exit
 fi
 
+# Detect Amazon Linux which does not provide OS specific *-release file
+if grep -qs "Amazon Linux" /etc/os-release; then
+        isAmazon=1
+fi
+
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo "This script needs to be run with bash, not sh"
@@ -46,7 +51,7 @@ fi
 if [[ -e /etc/debian_version ]]; then
 	os="debian"
 	group_name="nogroup"
-elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+elif [[ -e /etc/centos-release || -e /etc/redhat-release || $isAmazon ]]; then
 	os="centos"
 	group_name="nobody"
 else
