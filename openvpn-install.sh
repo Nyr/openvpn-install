@@ -181,7 +181,15 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 	[[ -z "$client" ]] && client="client"
 	echo
-	echo "Okay, that was all I needed. We are ready to set up your OpenVPN server now."
+	echo "We are ready to set up your OpenVPN server now."
+	# DigitalOcean ships their CentOS and Fedora images without firewalld
+	# We don't want to silently enable a firewall, so we give a subtle warning
+	# If the user continues, firewalld will be installed and enabled during setup
+	if [[ "$os" == "centos" || "$os" == "fedora" ]] && ! systemctl is-active --quiet firewalld.service; then
+		echo
+		echo "firewalld, which is required to manage routing tables, will also be installed."
+	fi
+	echo
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
@@ -194,10 +202,12 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		apt-get install -y openvpn iptables openssl ca-certificates
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
-		yum install -y openvpn iptables openssl ca-certificates tar
+		yum install -y openvpn firewalld openssl ca-certificates tar
+		systemctl enable --now firewalld.service
 	else
 		# Else, OS must be Fedora
-		dnf install -y openvpn iptables openssl ca-certificates tar
+		dnf install -y openvpn firewalld openssl ca-certificates tar
+		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.7/EasyRSA-3.0.7.tgz'
@@ -308,7 +318,7 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# Enable without waiting for a reboot or service restart
 		echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 	fi
-	if pgrep firewalld; then
+	if systemctl is-active --quiet firewalld.service; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
 		# We don't use --add-service=openvpn because that would only work with
@@ -360,9 +370,11 @@ WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 		# Install semanage if not already present
 		if ! hash semanage 2>/dev/null; then
 			if [[ "$os_version" -eq 7 ]]; then
+				# Centos 7
 				yum install -y policycoreutils-python
 			else
-				yum install -y policycoreutils-python-utils
+				# CentOS 8 or Fedora
+				dnf install -y policycoreutils-python-utils
 			fi
 		fi
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
@@ -476,7 +488,7 @@ else
 			if [[ "$remove" =~ ^[yY]$ ]]; then
 				port=$(grep '^port ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
 				protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
-				if pgrep firewalld; then
+				if systemctl is-active --quiet firewalld.service; then
 					ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --remove-port="$port"/"$protocol"
