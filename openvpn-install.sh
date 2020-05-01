@@ -182,12 +182,18 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	[[ -z "$client" ]] && client="client"
 	echo
 	echo "We are ready to set up your OpenVPN server now."
-	# DigitalOcean ships their CentOS and Fedora images without firewalld
-	# We don't want to silently enable a firewall, so we give a subtle warning
-	# If the user continues, firewalld will be installed and enabled during setup
-	if [[ "$os" == "centos" || "$os" == "fedora" ]] && ! systemctl is-active --quiet firewalld.service; then
-		echo
-		echo "firewalld, which is required to manage routing tables, will also be installed."
+	# Install a firewall in the rare case where one is not already available
+	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
+		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+			firewall="firewalld"
+			# We don't want to silently enable firewalld, so we give a subtle warning
+			# If the user continues, firewalld will be installed and enabled during setup
+			echo
+			echo "firewalld, which is required to manage routing tables, will also be installed."
+		elif [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
+			# iptables is way less invasive than firewalld so no warning is given
+			firewall="iptables"
+		fi
 	fi
 	echo
 	read -n1 -r -p "Press any key to continue..."
@@ -199,14 +205,16 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	fi
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
-		apt-get install -y openvpn iptables openssl ca-certificates
+		apt-get install -y openvpn openssl ca-certificates $firewall
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
-		yum install -y openvpn firewalld openssl ca-certificates tar
-		systemctl enable --now firewalld.service
+		yum install -y openvpn openssl ca-certificates tar $firewall
 	else
 		# Else, OS must be Fedora
-		dnf install -y openvpn firewalld openssl ca-certificates tar
+		dnf install -y openvpn openssl ca-certificates tar $firewall
+	fi
+	# If firewalld was just installed, enable it
+	if [[ "$firewall" == "firewalld" ]]; then
 		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
