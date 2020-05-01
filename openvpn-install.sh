@@ -329,11 +329,13 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 	if systemctl is-active --quiet firewalld.service; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
-		# We don't use --add-service=openvpn because that would only work with
-		# the default port and protocol.
-		firewall-cmd --add-port="$port"/"$protocol"
+		# We define a new openvpn service so we can use our port and protocol
+		cp /usr/lib/firewalld/services/openvpn.xml /etc/firewalld/services
+		sed -i "s|udp|${protocol}|" /etc/firewalld/services/openvpn.xml
+		sed -i "s|1194|${port}|" /etc/firewalld/services/openvpn.xml
+		firewall-cmd --add-service=openvpn
 		firewall-cmd --zone=trusted --add-source=10.8.0.0/24
-		firewall-cmd --permanent --add-port="$port"/"$protocol"
+		firewall-cmd --permanent --add-service=openvpn
 		firewall-cmd --permanent --zone=trusted --add-source=10.8.0.0/24
 		# Set NAT for the VPN subnet
 		firewall-cmd --direct --add-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
@@ -499,9 +501,9 @@ else
 				if systemctl is-active --quiet firewalld.service; then
 					ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
-					firewall-cmd --remove-port="$port"/"$protocol"
+					firewall-cmd --remove-service=openvpn
 					firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
-					firewall-cmd --permanent --remove-port="$port"/"$protocol"
+					firewall-cmd --permanent --remove-service=openvpn
 					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
 					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
 					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
@@ -512,6 +514,8 @@ else
 						firewall-cmd --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
 						firewall-cmd --permanent --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
 					fi
+					# Remove the defined openvpn service
+					rm /etc/firewalld/services/openvpn.xml
 				else
 					systemctl disable --now openvpn-iptables.service
 					rm -f /etc/systemd/system/openvpn-iptables.service
