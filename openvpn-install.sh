@@ -348,6 +348,12 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# Create a service to set up persistent iptables rules
 		iptables_path=$(command -v iptables)
 		ip6tables_path=$(command -v ip6tables)
+		# Old OpenVZ kernels don't have nf_tables support
+		# iptables-nft is the default in Debian 10, but we need to use iptables-legacy
+		if [[ "$os" == "debian" && "$os_version" -eq 10 && "$(systemd-detect-virt)" == "openvz" ]]; then
+			iptables_path=$(command -v iptables-legacy)
+			ip6tables_path=$(command -v ip6tables-legacy)
+		fi
 		echo "[Unit]
 Before=network.target
 [Service]
@@ -361,7 +367,7 @@ ExecStop=$iptables_path -D INPUT -p $protocol --dport $port -j ACCEPT
 ExecStop=$iptables_path -D FORWARD -s 10.8.0.0/24 -j ACCEPT
 ExecStop=$iptables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" > /etc/systemd/system/openvpn-iptables.service
 		if [[ -n "$ip6" ]]; then
-			echo "ExecStart=/sbin/ip6tables -t nat -A POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
+			echo "ExecStart=$ip6tables_path -t nat -A POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
 ExecStart=$ip6tables_path -I FORWARD -s fddd:1194:1194:1194::/64 -j ACCEPT
 ExecStart=$ip6tables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
 ExecStop=$ip6tables_path -t nat -D POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
