@@ -348,9 +348,9 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# Create a service to set up persistent iptables rules
 		iptables_path=$(command -v iptables)
 		ip6tables_path=$(command -v ip6tables)
-		# Old OpenVZ kernels don't have nf_tables support
-		# iptables-nft is the default in Debian 10, but we need to use iptables-legacy
-		if [[ "$os" == "debian" && "$os_version" -eq 10 && "$(systemd-detect-virt)" == "openvz" ]]; then
+		# nf_tables is not available as standard in OVZ kernels. So use iptables-legacy
+		# if we are in OVZ, with a nf_tables backend and iptables-legacy is available.
+		if [[ $(systemd-detect-virt) == "openvz" ]] && readlink -f $(command -v iptables) | grep -q "nft" && hash iptables-legacy 2>/dev/null; then
 			iptables_path=$(command -v iptables-legacy)
 			ip6tables_path=$(command -v ip6tables-legacy)
 		fi
