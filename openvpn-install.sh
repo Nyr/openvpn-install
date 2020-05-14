@@ -57,9 +57,11 @@ This version of CentOS is too old and unsupported"
 	exit
 fi
 
-if [[ ! -e /dev/net/tun ]]; then
-	echo "The TUN device is not available
-You need to enable TUN before running this script"
+if [[ -e /dev/net/tun ]] && exec 2>/dev/null 7<>/dev/net/tun; then
+	exec 7>&-
+else
+	echo "This system does not have the TUN device available
+TUN needs to be enabled before running this installer"
 	exit
 fi
 
