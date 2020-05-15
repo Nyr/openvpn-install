@@ -57,9 +57,7 @@ This version of CentOS is too old and unsupported"
 	exit
 fi
 
-if [[ -e /dev/net/tun ]] && exec 2>/dev/null 7<>/dev/net/tun; then
-	exec 7>&-
-else
+if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
 	echo "This system does not have the TUN device available
 TUN needs to be enabled before running this installer"
 	exit
