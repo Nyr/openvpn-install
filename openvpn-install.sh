@@ -5,6 +5,9 @@
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
 
+# Discard stdin. Needed when running from an one-liner which includes a newline
+read -N 999999999 -t 0.001
+
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo "This script needs to be run with bash, not sh"
@@ -13,6 +16,12 @@ fi
 
 if [[ "$EUID" -ne 0 ]]; then
 	echo "Sorry, you need to run this as root"
+	exit
+fi
+
+# Detect OpenVZ 6
+if [[ $(uname -r | cut -d "." -f 1) -eq 2 ]]; then
+	echo "The system is running an old kernel, which is incompatible with this installer"
 	exit
 fi
 
@@ -60,6 +69,13 @@ fi
 if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
 	echo "This system does not have the TUN device available
 TUN needs to be enabled before running this installer"
+	exit
+fi
+
+# Detect environments where $PATH does not include the sbin directories
+if ! grep -q sbin <<< $PATH; then
+	echo '$PATH does not include sbin
+Try using "su -" instead of "su"'
 	exit
 fi
 
