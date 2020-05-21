@@ -6,16 +6,11 @@
 
 
 # Discard stdin. Needed when running from an one-liner which includes a newline
-read -N 999999999 -t 0.001
+read -N 999999 -t 0.001
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo 'This installer needs to be run with "bash", not "sh".'
-	exit
-fi
-
-if [[ "$EUID" -ne 0 ]]; then
-	echo "This installer needs to be run with superuser privileges."
 	exit
 fi
 
@@ -67,15 +62,20 @@ This version of CentOS is too old and unsupported."
 	exit
 fi
 
-if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
-	echo "The system does not have the TUN device available.
-TUN needs to be enabled before running this installer."
+# Detect environments where $PATH does not include the sbin directories
+if ! grep -q sbin <<< "$PATH"; then
+	echo '$PATH does not include sbin. Try using "su -" instead of "su".'
 	exit
 fi
 
-# Detect environments where $PATH does not include the sbin directories
-if ! grep -q sbin <<< $PATH; then
-	echo '$PATH does not include sbin. Try using "su -" instead of "su".'
+if [[ "$EUID" -ne 0 ]]; then
+	echo "This installer needs to be run with superuser privileges."
+	exit
+fi
+
+if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
+	echo "The system does not have the TUN device available.
+TUN needs to be enabled before running this installer."
 	exit
 fi
 
@@ -125,8 +125,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		get_public_ip=$(grep -m 1 -oE '^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$' <<< "$(wget -T 10 -t 1 -4qO- "http://ip1.dynupdate.no-ip.com/" || curl -m 10 -4Ls "http://ip1.dynupdate.no-ip.com/")")
 		read -p "Public IPv4 address / hostname [$get_public_ip]: " public_ip
 		# If the checkip service is unavailable and user didn't provide input, ask again
-		until [[ -n "$get_public_ip" || -n $public_ip ]]; do
-    		echo "Invalid input."
+		until [[ -n "$get_public_ip" || -n "$public_ip" ]]; do
+			echo "Invalid input."
 			read -p "Public IPv4 address / hostname: " public_ip
 		done
 		[[ -z "$public_ip" ]] && public_ip="$get_public_ip"
@@ -194,7 +194,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 	[[ -z "$client" ]] && client="client"
 	echo
-	echo "OpenVPN installation is ready to begin now."
+	echo "OpenVPN installation is ready to begin."
 	# Install a firewall in the rare case where one is not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
 		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
@@ -216,13 +216,13 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	fi
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
-		apt-get install -y openvpn openssl ca-certificates $firewall
+		apt-get install -y openvpn openssl ca-certificates "$firewall"
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
-		yum install -y openvpn openssl ca-certificates tar $firewall
+		yum install -y openvpn openssl ca-certificates tar "$firewall"
 	else
 		# Else, OS must be Fedora
-		dnf install -y openvpn openssl ca-certificates tar $firewall
+		dnf install -y openvpn openssl ca-certificates tar "$firewall"
 	fi
 	# If firewalld was just installed, enable it
 	if [[ "$firewall" == "firewalld" ]]; then
@@ -358,7 +358,7 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		ip6tables_path=$(command -v ip6tables)
 		# nf_tables is not available as standard in OVZ kernels. So use iptables-legacy
 		# if we are in OVZ, with a nf_tables backend and iptables-legacy is available.
-		if [[ $(systemd-detect-virt) == "openvz" ]] && readlink -f $(command -v iptables) | grep -q "nft" && hash iptables-legacy 2>/dev/null; then
+		if [[ $(systemd-detect-virt) == "openvz" ]] && readlink -f "$(command -v iptables)" | grep -q "nft" && hash iptables-legacy 2>/dev/null; then
 			iptables_path=$(command -v iptables-legacy)
 			ip6tables_path=$(command -v ip6tables-legacy)
 		fi
@@ -402,7 +402,7 @@ WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
 	fi
 	# If the server is behind NAT, use the correct IP address
-	[[ ! -z "$public_ip" ]] && ip="$public_ip"
+	[[ -n "$public_ip" ]] && ip="$public_ip"
 	# client-common.txt is created so we have a template to add further users later
 	echo "client
 dev tun
@@ -432,8 +432,8 @@ else
 	echo "OpenVPN is already installed."
 	echo
 	echo "Select an option:"
-	echo "   1) Add a new user"
-	echo "   2) Revoke an existing user"
+	echo "   1) Add a new client"
+	echo "   2) Revoke an existing client"
 	echo "   3) Remove OpenVPN"
 	echo "   4) Exit"
 	read -p "Option: " option
