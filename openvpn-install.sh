@@ -177,10 +177,10 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo
 	echo "Select a DNS server for the clients:"
 	echo "   1) Current system resolvers"
-	echo "   2) 1.1.1.1"
-	echo "   3) Google"
+	echo "   2) Google"
+	echo "   3) 1.1.1.1"
 	echo "   4) OpenDNS"
-	echo "   5) NTT"
+	echo "   5) Quad9"
 	echo "   6) AdGuard"
 	read -p "DNS server [1]: " dns
 	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
@@ -292,20 +292,20 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			done
 		;;
 		2)
-			echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server/server.conf
-		;;
-		3)
 			echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server/server.conf
+		;;
+		3)
+			echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server/server.conf
 		;;
 		4)
 			echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server/server.conf
 		;;
 		5)
-			echo 'push "dhcp-option DNS 129.250.35.250"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 129.250.35.251"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 9.9.9.9"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 149.112.112.112"' >> /etc/openvpn/server/server.conf
 		;;
 		6)
 			echo 'push "dhcp-option DNS 176.103.130.130"' >> /etc/openvpn/server/server.conf
