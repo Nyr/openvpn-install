@@ -417,6 +417,7 @@ persist-tun
 remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
+route-nopull
 ignore-unknown-option block-outside-dns
 block-outside-dns
 verb 3" > /etc/openvpn/server/client-common.txt
