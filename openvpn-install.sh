@@ -34,6 +34,10 @@ elif [[ -e /etc/centos-release ]]; then
 	os="centos"
 	os_version=$(grep -oE '[0-9]+' /etc/centos-release | head -1)
 	group_name="nobody"
+elif [[ -e /etc/redhat-release ]]; then
+	os="centos"
+	os_version=$(grep -oE '[0-9]+' /etc/redhat-release | head -1)
+	group_name="nobody"
 elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
