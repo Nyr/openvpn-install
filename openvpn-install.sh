@@ -228,11 +228,11 @@ LimitNPROC=infinity' > /etc/systemd/system/openvpn-server@server.service.d/disab
 		yum install openvpn iptables openssl ca-certificates -y
 	fi
 	# Get easy-rsa
-	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.5/EasyRSA-nix-3.0.5.tgz'
+	EASYRSAURL='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
 	wget -O ~/easyrsa.tgz "$EASYRSAURL" 2>/dev/null || curl -Lo ~/easyrsa.tgz "$EASYRSAURL"
 	tar xzf ~/easyrsa.tgz -C ~/
-	mv ~/EasyRSA-3.0.5/ /etc/openvpn/server/
-	mv /etc/openvpn/server/EasyRSA-3.0.5/ /etc/openvpn/server/easy-rsa/
+	mv ~/EasyRSA-3.0.8/ /etc/openvpn/server/
+	mv /etc/openvpn/server/EasyRSA-3.0.8/ /etc/openvpn/server/easy-rsa/
 	chown -R root:root /etc/openvpn/server/easy-rsa/
 	rm -f ~/easyrsa.tgz
 	cd /etc/openvpn/server/easy-rsa/
@@ -309,10 +309,6 @@ ca ca.crt
 cert server.crt
 key server.key
 dh dh.pem
-auth SHA512
-tls-auth ta.key 0
-topology subnet
-server 10.8.0.0 255.255.255.0
 ifconfig-pool-persist ipp.txt" > /etc/openvpn/server/server.conf
 	echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server/server.conf
 	# DNS
@@ -348,12 +344,18 @@ ifconfig-pool-persist ipp.txt" > /etc/openvpn/server/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
+auth SHA512
+tls-auth ta.key 0
+topology subnet
+server 10.8.0.0 255.255.255.0
 cipher AES-256-CBC
 user nobody
 group $GROUPNAME
 persist-key
 persist-tun
 status openvpn-status.log
+log /var/log/openvpn.log
+log-append /var/log/openvpn.log
 verb 3
 crl-verify crl.pem
 auth-user-pass-verify /etc/openvpn/checkpsw.sh via-env
@@ -423,6 +425,7 @@ rcvbuf 0
 remote $IP $PORT
 resolv-retry infinite
 nobind
+key-direction 1
 persist-key
 persist-tun
 auth-user-pass
@@ -430,7 +433,6 @@ remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
 setenv opt block-outside-dns
-key-direction 1
 verb 3" > /etc/openvpn/server/client-common.txt
 	# Generates the custom client.ovpn
 	newclient "$CLIENT"
