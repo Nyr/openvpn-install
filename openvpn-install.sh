@@ -38,6 +38,10 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif [[ -e /etc/os-release ]]; then
+	os="opensuse-leap"
+	os_version=$(grep -oE '[0-9]+' /etc/os-release | head -1)
+	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
 Supported distributions are Ubuntu, Debian, CentOS, and Fedora."
@@ -62,6 +66,12 @@ This version of CentOS is too old and unsupported."
 	exit
 fi
 
+if [[ "$os" == "opensuse-leap" && "$os_version" -eq 42 ]]; then
+	echo "openSUSE Leap 15 or higher is required to use this installer.
+This version of openSUSE is too old and unsupported."
+	exit
+fi
+
 # Detect environments where $PATH does not include the sbin directories
 if ! grep -q sbin <<< "$PATH"; then
 	echo '$PATH does not include sbin. Try using "su -" instead of "su".'
@@ -79,26 +89,34 @@ TUN needs to be enabled before running this installer."
 	exit
 fi
 
+if [[ "$os" == "opensuse-leap" ]]; then
+        conf_path=/etc/openvpn
+        service_name=openvpn@server.service
+else
+        conf_path=/etc/openvpn/server
+        service_name=openvpn-server@server.service
+fi
+
 new_client () {
 	# Generates the custom client.ovpn
 	{
-	cat /etc/openvpn/server/client-common.txt
+	cat $conf_path/client-common.txt
 	echo "<ca>"
-	cat /etc/openvpn/server/easy-rsa/pki/ca.crt
+	cat $conf_path/easy-rsa/pki/ca.crt
 	echo "</ca>"
 	echo "<cert>"
-	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt
+	sed -ne '/BEGIN CERTIFICATE/,$ p' $conf_path/easy-rsa/pki/issued/"$client".crt
 	echo "</cert>"
 	echo "<key>"
-	cat /etc/openvpn/server/easy-rsa/pki/private/"$client".key
+	cat $conf_path/easy-rsa/pki/private/"$client".key
 	echo "</key>"
 	echo "<tls-crypt>"
-	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
+	sed -ne '/BEGIN OpenVPN Static key/,$ p' $conf_path/tc.key
 	echo "</tls-crypt>"
 	} > ~/"$client".ovpn
 }
 
-if [[ ! -e /etc/openvpn/server/server.conf ]]; then
+if [[ ! -e $conf_path/server.conf ]]; then
 	clear
 	echo 'Welcome to this OpenVPN road warrior installer!'
 	# If system has a single IPv4, it is selected automatically. Else, ask the user
@@ -197,7 +215,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall in the rare case where one is not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
-		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+		if [[ "$os" == "centos" || "$os" == "fedora" || "$os" == "opensuse-leap" ]]; then
 			firewall="firewalld"
 			# We don't want to silently enable firewalld, so we give a subtle warning
 			# If the user continues, firewalld will be installed and enabled during setup
@@ -220,9 +238,12 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
+	elif [[ "$os" = "fedora" ]]; then
+	        dnf install -y openvpn openssl ca-certificates tar $firewall
 	else
-		# Else, OS must be Fedora
-		dnf install -y openvpn openssl ca-certificates tar $firewall
+		# Else, OS must be openSUSE
+		zypper ref
+		zypper install openvpn openssl ca-certificates tar $firewal
 	fi
 	# If firewalld was just installed, enable it
 	if [[ "$firewall" == "firewalld" ]]; then
@@ -230,10 +251,10 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	fi
 	# Get easy-rsa
 	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
-	mkdir -p /etc/openvpn/server/easy-rsa/
-	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
-	chown -R root:root /etc/openvpn/server/easy-rsa/
-	cd /etc/openvpn/server/easy-rsa/
+	mkdir -p $conf_path/easy-rsa/
+	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C $conf_path/easy-rsa/ --strip-components 1
+	chown -R root:root $conf_path/easy-rsa/
+	cd $conf_path/easy-rsa/
 	# Create the PKI, set up the CA and the server and client certificates
 	./easyrsa init-pki
 	./easyrsa --batch build-ca nopass
@@ -241,13 +262,13 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
+	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem $conf_path
 	# CRL is read with each client connection, while OpenVPN is dropped to nobody
-	chown nobody:"$group_name" /etc/openvpn/server/crl.pem
+	chown nobody:"$group_name" $conf_path/crl.pem
 	# Without +x in the directory, OpenVPN can't run a stat() on the CRL file
-	chmod o+x /etc/openvpn/server/
+	chmod o+x $conf_path/
 	# Generate key for tls-crypt
-	openvpn --genkey --secret /etc/openvpn/server/tc.key
+	openvpn --genkey --secret $conf_path/tc.key
 	# Create the DH parameters file using the predefined ffdhe2048 group
 	echo '-----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
@@ -256,7 +277,7 @@ MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
 YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
 7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
 ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
------END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
+-----END DH PARAMETERS-----' > $conf_path/dh.pem
 	# Generate server.conf
 	echo "local $ip
 port $port
@@ -269,15 +290,15 @@ dh dh.pem
 auth SHA512
 tls-crypt tc.key
 topology subnet
-server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
+server 10.8.0.0 255.255.255.0" > $conf_path/server.conf
 	# IPv6
 	if [[ -z "$ip6" ]]; then
-		echo 'push "redirect-gateway def1 bypass-dhcp"' >> /etc/openvpn/server/server.conf
+		echo 'push "redirect-gateway def1 bypass-dhcp"' >> $conf_path/server.conf
 	else
-		echo 'server-ipv6 fddd:1194:1194:1194::/64' >> /etc/openvpn/server/server.conf
-		echo 'push "redirect-gateway def1 ipv6 bypass-dhcp"' >> /etc/openvpn/server/server.conf
+		echo 'server-ipv6 fddd:1194:1194:1194::/64' >> $conf_path/server.conf
+		echo 'push "redirect-gateway def1 ipv6 bypass-dhcp"' >> $conf_path/server.conf
 	fi
-	echo 'ifconfig-pool-persist ipp.txt' >> /etc/openvpn/server/server.conf
+	echo 'ifconfig-pool-persist ipp.txt' >> $conf_path/server.conf
 	# DNS
 	case "$dns" in
 		1|"")
@@ -290,28 +311,28 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			fi
 			# Obtain the resolvers from resolv.conf and use them for OpenVPN
 			grep -v '^#\|^;' "$resolv_conf" | grep '^nameserver' | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | while read line; do
-				echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server/server.conf
+				echo "push \"dhcp-option DNS $line\"" >> $conf_path/server.conf
 			done
 		;;
 		2)
-			echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 8.8.8.8"' >> $conf_path/server.conf
+			echo 'push "dhcp-option DNS 8.8.4.4"' >> $conf_path/server.conf
 		;;
 		3)
-			echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 1.1.1.1"' >> $conf_path/server.conf
+			echo 'push "dhcp-option DNS 1.0.0.1"' >> $conf_path/server.conf
 		;;
 		4)
-			echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 208.67.222.222"' >> $conf_path/server.conf
+			echo 'push "dhcp-option DNS 208.67.220.220"' >> $conf_path/server.conf
 		;;
 		5)
-			echo 'push "dhcp-option DNS 9.9.9.9"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 149.112.112.112"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 9.9.9.9"' >> $conf_path/server.conf
+			echo 'push "dhcp-option DNS 149.112.112.112"' >> $conf_path/server.conf
 		;;
 		6)
-			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 94.140.14.14"' >> $conf_path/server.conf
+			echo 'push "dhcp-option DNS 94.140.15.15"' >> $conf_path/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
@@ -322,17 +343,25 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
-crl-verify crl.pem" >> /etc/openvpn/server/server.conf
+crl-verify crl.pem" >> $conf_path/server.conf
 	if [[ "$protocol" = "udp" ]]; then
-		echo "explicit-exit-notify" >> /etc/openvpn/server/server.conf
+		echo "explicit-exit-notify" >> $conf_path/server.conf
 	fi
 	# Enable net.ipv4.ip_forward for the system
-	echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
+	if [[ "$os" == "opensuse-leap" ]]; then
+	        sed '1 s/0/1/' /etc/sysctl.d/70-yast.conf
+	else
+	        echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
+	fi
 	# Enable without waiting for a reboot or service restart
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	if [[ -n "$ip6" ]]; then
 		# Enable net.ipv6.conf.all.forwarding for the system
-		echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.d/30-openvpn-forward.conf
+			if [[ "$os" == "opensuse-leap" ]]; then
+	                        sed '2 s/0/1/' /etc/sysctl.d/70-yast.conf
+	                else
+                		echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.d/30-openvpn-forward.conf
+                	fi
 		# Enable without waiting for a reboot or service restart
 		echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 	fi
@@ -419,9 +448,9 @@ auth SHA512
 cipher AES-256-CBC
 ignore-unknown-option block-outside-dns
 block-outside-dns
-verb 3" > /etc/openvpn/server/client-common.txt
+verb 3" > $conf_path/client-common.txt
 	# Enable and start the OpenVPN service
-	systemctl enable --now openvpn-server@server.service
+	systemctl enable --now $service_name
 	# Generates the custom client.ovpn
 	new_client
 	echo
@@ -449,12 +478,12 @@ else
 			echo "Provide a name for the client:"
 			read -p "Name: " unsanitized_client
 			client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
-			while [[ -z "$client" || -e /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt ]]; do
+			while [[ -z "$client" || -e $conf_path/easy-rsa/pki/issued/"$client".crt ]]; do
 				echo "$client: invalid name."
 				read -p "Name: " unsanitized_client
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
-			cd /etc/openvpn/server/easy-rsa/
+			cd $conf_path/easy-rsa/
 			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
 			# Generates the custom client.ovpn
 			new_client
@@ -465,7 +494,7 @@ else
 		2)
 			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
-			number_of_clients=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep -c "^V")
+			number_of_clients=$(tail -n +2 $conf_path/easy-rsa/pki/index.txt | grep -c "^V")
 			if [[ "$number_of_clients" = 0 ]]; then
 				echo
 				echo "There are no existing clients!"
@@ -473,13 +502,13 @@ else
 			fi
 			echo
 			echo "Select the client to revoke:"
-			tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
+			tail -n +2 $conf_path/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
 			read -p "Client: " client_number
 			until [[ "$client_number" =~ ^[0-9]+$ && "$client_number" -le "$number_of_clients" ]]; do
 				echo "$client_number: invalid selection."
 				read -p "Client: " client_number
 			done
-			client=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$client_number"p)
+			client=$(tail -n +2 $conf_path/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$client_number"p)
 			echo
 			read -p "Confirm $client revocation? [y/N]: " revoke
 			until [[ "$revoke" =~ ^[yYnN]*$ ]]; do
@@ -487,13 +516,13 @@ else
 				read -p "Confirm $client revocation? [y/N]: " revoke
 			done
 			if [[ "$revoke" =~ ^[yY]$ ]]; then
-				cd /etc/openvpn/server/easy-rsa/
+				cd $conf_path/easy-rsa/
 				./easyrsa --batch revoke "$client"
 				EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
-				rm -f /etc/openvpn/server/crl.pem
-				cp /etc/openvpn/server/easy-rsa/pki/crl.pem /etc/openvpn/server/crl.pem
+				rm -f $conf_path/crl.pem
+				cp $conf_path/easy-rsa/pki/crl.pem $conf_path/crl.pem
 				# CRL is read with each client connection, when OpenVPN is dropped to nobody
-				chown nobody:"$group_name" /etc/openvpn/server/crl.pem
+				chown nobody:"$group_name" $conf_path/crl.pem
 				echo
 				echo "$client revoked!"
 			else
@@ -510,8 +539,8 @@ else
 				read -p "Confirm OpenVPN removal? [y/N]: " remove
 			done
 			if [[ "$remove" =~ ^[yY]$ ]]; then
-				port=$(grep '^port ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
-				protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
+				port=$(grep '^port ' $conf_path/server.conf | cut -d " " -f 2)
+				protocol=$(grep '^proto ' $conf_path/server.conf | cut -d " " -f 2)
 				if systemctl is-active --quiet firewalld.service; then
 					ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
@@ -521,7 +550,7 @@ else
 					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
 					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
 					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
-					if grep -qs "server-ipv6" /etc/openvpn/server/server.conf; then
+					if grep -qs "server-ipv6" $conf_path/server.conf; then
 						ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING | grep '\-s fddd:1194:1194:1194::/64 '"'"'!'"'"' -d fddd:1194:1194:1194::/64' | grep -oE '[^ ]+$')
 						firewall-cmd --zone=trusted --remove-source=fddd:1194:1194:1194::/64
 						firewall-cmd --permanent --zone=trusted --remove-source=fddd:1194:1194:1194::/64
@@ -535,12 +564,14 @@ else
 				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
 					semanage port -d -t openvpn_port_t -p "$protocol" "$port"
 				fi
-				systemctl disable --now openvpn-server@server.service
-				rm -rf /etc/openvpn/server
+				systemctl disable --now $service_name
+				rm -rf $conf_path
 				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					apt-get remove --purge -y openvpn
+				elif [[ "$os" == "opensuse-leap" ]]; then
+				        zypper remove --no-clean-deps openvpn
 				else
 					# Else, OS must be CentOS or Fedora
 					yum remove -y openvpn
