@@ -348,7 +348,7 @@ crl-verify crl.pem" >> $conf_path/server.conf
 		echo "explicit-exit-notify" >> $conf_path/server.conf
 	fi
 	# Enable net.ipv4.ip_forward for the system
-	if [[ "$os" == "opensuse-leap" ]]; then
+	if [[ "$os" == "opensuse-leap" && -f /etc/sysctl.d/70-yast.conf ]]; then
 	        sed '1 s/0/1/' /etc/sysctl.d/70-yast.conf
 	else
 	        echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/30-openvpn-forward.conf
@@ -357,7 +357,7 @@ crl-verify crl.pem" >> $conf_path/server.conf
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	if [[ -n "$ip6" ]]; then
 		# Enable net.ipv6.conf.all.forwarding for the system
-			if [[ "$os" == "opensuse-leap" ]]; then
+			if [[ "$os" == "opensuse-leap" && -f /etc/sysctl.d/70-yast.conf ]]; then
 	                        sed '2 s/0/1/' /etc/sysctl.d/70-yast.conf
 	                else
                 		echo "net.ipv6.conf.all.forwarding=1" >> /etc/sysctl.d/30-openvpn-forward.conf
