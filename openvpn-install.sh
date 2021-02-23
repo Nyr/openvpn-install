@@ -341,7 +341,6 @@ user nobody
 group $group_name
 persist-key
 persist-tun
-status openvpn-status.log
 verb 3
 crl-verify crl.pem" >> $conf_path/server.conf
 	if [[ "$protocol" = "udp" ]]; then
