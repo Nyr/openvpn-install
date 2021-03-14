@@ -38,9 +38,13 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif grep -qs "Amazon Linux" /etc/system-release; then
+	os="al2"
+	os_version=$(grep -oE '[0-9]+' /etc/system-release | head -1)
+	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
-Supported distributions are Ubuntu, Debian, CentOS, and Fedora."
+Supported distributions are Ubuntu, Debian, CentOS, Fedora and Amazon Linux."
 	exit
 fi
 
@@ -61,6 +65,14 @@ if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
 This version of CentOS is too old and unsupported."
 	exit
 fi
+
+if [[ "$os" == "al2" && "$os_version" -lt 2 ]]; then
+	echo "Amazon Linux 2 or higher is required to use this installer.
+This version of Amazon Linux is too old and unsupported."
+	exit
+fi
+
+
 
 # Detect environments where $PATH does not include the sbin directories
 if ! grep -q sbin <<< "$PATH"; then
@@ -197,7 +209,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall in the rare case where one is not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
-		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+		if [[ "$os" == "centos" || "$os" == "fedora" || "$os" == "al2" ]]; then
 			firewall="firewalld"
 			# We don't want to silently enable firewalld, so we give a subtle warning
 			# If the user continues, firewalld will be installed and enabled during setup
@@ -217,7 +229,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
 		apt-get install -y openvpn openssl ca-certificates $firewall
-	elif [[ "$os" = "centos" ]]; then
+	elif [[ "$os" = "centos" || "$os" = "al2" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
 	else
