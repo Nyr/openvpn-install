@@ -417,10 +417,12 @@ WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 			if [[ "$os_version" -eq 7 ]]; then
 				# Centos 7
 				yum install -y policycoreutils-python
-			else
-				# RHEL 8
+			elif [[ "$os" = "redhat" ]] && [[ "$os_version" -eq 7 ]]; then
 				wget https://access.cdn.redhat.com/content/origin/rpms/policycoreutils-python-utils/2.9/9.el8/fd431d51/policycoreutils-python-utils-2.9-9.el8.noarch.rpm
-				dnf -y install policycoreutils-python-utils/2.9/9.el8/fd431d51/policycoreutils-python-utils-2.9-9.el8.noarch.rpm?
+				dnf -y install policycoreutils-python-utils/2.9/9.el8/fd431d51/policycoreutils-python-utils-2.9-9.el8.noarch.rpm
+			else
+				# Fedora
+				dnf -y install policycoreutils-python
 			fi
 		fi
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
@@ -563,9 +565,11 @@ verb 3" > /etc/openvpn/server/client-common.txt
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					apt-get remove --purge -y openvpn
-				else
-					# Else, OS must be CentOS or Fedora
+				elif [[ "$os" = "redhat" || "fedora" ]]; then
 					dnf remove -y openvpn
+				else
+					# Else, OS must be CentOS
+					yum remove -y openvpn
 				fi
 				echo
 				echo "OpenVPN removed!"
