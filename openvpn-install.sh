@@ -38,6 +38,10 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif [[ -e /etc/redhat-release ]]; then
+	os="redhat"
+	os_version=$(grep -oE '[0-9]+' /etc/redhat-release | head -1)
+	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
 Supported distributions are Ubuntu, Debian, CentOS, and Fedora."
@@ -59,6 +63,12 @@ fi
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
 	echo "CentOS 7 or higher is required to use this installer.
 This version of CentOS is too old and unsupported."
+	exit
+fi
+
+if [[ "$os" == "redhat" && "$os_version" -lt 7 ]]; then
+	echo "RHEL 7 or higher is required to use this installer.
+This version of RHEL is too old and unsupported."
 	exit
 fi
 
@@ -159,10 +169,10 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		read -p "Protocol [1]: " protocol
 	done
 	case "$protocol" in
-		1|"") 
+		1|"")
 		protocol=udp
 		;;
-		2) 
+		2)
 		protocol=tcp
 		;;
 	esac
@@ -197,11 +207,22 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall in the rare case where one is not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
-		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+		if [[ "$os" == "centos" || "$os" == "fedora" || "$os" == "redhat" ]]; then
 			firewall="firewalld"
 			# We don't want to silently enable firewalld, so we give a subtle warning
 			# If the user continues, firewalld will be installed and enabled during setup
 			echo "firewalld, which is required to manage routing tables, will also be installed."
+		elif [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
+			# iptables is way less invasive than firewalld so no warning is given
+			firewall="iptables"
+		fi
+	fi
+	read -n1 -r -p "Press any key to continue..."
+	# If running inside a container, disable LimitNPROC to prevent conflicts
+	if systemd-detect-virt -cq; then
+		mkdir /etc/systemd/system/openvpn-server@server.service.d/ 2>/dev/null
+		echo "[Service]
+LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 		elif [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
 			# iptables is way less invasive than firewalld so no warning is given
 			firewall="iptables"
@@ -220,7 +241,8 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
-	else
+	elif [[ "$os" = "redhat" ]]; then
+		yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 		# Else, OS must be Fedora
 		dnf install -y openvpn openssl ca-certificates tar $firewall
 	fi
@@ -396,8 +418,9 @@ WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 				# Centos 7
 				yum install -y policycoreutils-python
 			else
-				# CentOS 8 or Fedora
-				dnf install -y policycoreutils-python-utils
+				# RHEL 8
+				wget https://access.cdn.redhat.com/content/origin/rpms/policycoreutils-python-utils/2.9/9.el8/fd431d51/policycoreutils-python-utils-2.9-9.el8.noarch.rpm
+				dnf -y install policycoreutils-python-utils/2.9/9.el8/fd431d51/policycoreutils-python-utils-2.9-9.el8.noarch.rpm?
 			fi
 		fi
 		semanage port -a -t openvpn_port_t -p "$protocol" "$port"
@@ -428,7 +451,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	echo
 	echo "The client configuration is available in:" ~/"$client.ovpn"
 	echo "New clients can be added by running this script again."
-else
+#else
 	clear
 	echo "OpenVPN is already installed."
 	echo
@@ -542,7 +565,7 @@ else
 					apt-get remove --purge -y openvpn
 				else
 					# Else, OS must be CentOS or Fedora
-					yum remove -y openvpn
+					dnf remove -y openvpn
 				fi
 				echo
 				echo "OpenVPN removed!"
@@ -556,4 +579,4 @@ else
 			exit
 		;;
 	esac
-fi
+#fi
