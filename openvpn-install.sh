@@ -229,7 +229,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
-	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.7/EasyRSA-3.0.7.tgz'
+	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
 	mkdir -p /etc/openvpn/server/easy-rsa/
 	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
 	chown -R root:root /etc/openvpn/server/easy-rsa/
@@ -310,8 +310,8 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 149.112.112.112"' >> /etc/openvpn/server/server.conf
 		;;
 		6)
-			echo 'push "dhcp-option DNS 176.103.130.130"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 176.103.130.131"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
 		;;
 	esac
 	echo "keepalive 10 120
@@ -320,7 +320,6 @@ user nobody
 group $group_name
 persist-key
 persist-tun
-status openvpn-status.log
 verb 3
 crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 	if [[ "$protocol" = "udp" ]]; then
