@@ -6,7 +6,7 @@ This script will let you set up your own VPN server in no more than a minute, ev
 ### Installation
 Run the script and follow the assistant:
 
-`wget https://github.com/Skipperro/openvpn-install/blob/master/openvpn-install.sh && bash openvpn-install.sh`
+`wget https://raw.githubusercontent.com/Skipperro/openvpn-install/master/openvpn-install.sh && bash openvpn-install.sh`
 
 `wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh`
 
