@@ -17,4 +17,5 @@ You can get a VPS from just $1/month at [VirMach](https://billing.virmach.com/af
 
 ### Donations
 
-If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.me/leo.haim.nigri).  Thanks!
+If you want to show your appreciation, you can donate via [PayPal] ( http
+://www.paypal.me/leo.haim.nigri ).  Thanks!
