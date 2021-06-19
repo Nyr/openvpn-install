@@ -38,9 +38,17 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif [[ -e /etc/os-release ]]; then
+	os="rocky"
+	os_version=$(grep -oE '[0-9]+' /etc/os-release | head -1)
+	group_name="nobody"
+elif [[ -e /etc/os-release ]]; then
+	os="almalinux"
+	os_version=$(grep -oE '[0-9]+' /etc/os-release | head -1)
+	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
-Supported distributions are Ubuntu, Debian, CentOS, and Fedora."
+Supported distributions are Ubuntu, Debian, CentOS, Fedora, Rocky Linux, and Alma Linux."
 	exit
 fi
 
@@ -59,6 +67,16 @@ fi
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
 	echo "CentOS 7 or higher is required to use this installer.
 This version of CentOS is too old and unsupported."
+	exit
+fi
+if [[ "$os" == "rocky" && "$os_version" -lt 8 ]]; then
+	echo "Rocky Linux 8 or higher is required to use this installer.
+This version of Rocky Linux is too old and unsupported."
+	exit
+fi
+if [[ "$os" == "almalinux" && "$os_version" -lt 8 ]]; then
+	echo "Alma Linux 8 or higher is required to use this installer.
+This version of Alma Linux is too old and unsupported."
 	exit
 fi
 
@@ -217,7 +235,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
 		apt-get install -y openvpn openssl ca-certificates $firewall
-	elif [[ "$os" = "centos" ]]; then
+	elif [[ "$os" = "centos" || "$os" = "rocky" || "$os" = "almalinux" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
 	else
