@@ -231,7 +231,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
 	elif [[ "$os" = "oracle" ]]; then
-		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-${os_version}.noarch.rpm
 		dnf install -y openvpn openssl ca-certificates tar $firewall
 	else
 		# Else, OS must be Fedora
