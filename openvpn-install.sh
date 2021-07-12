@@ -30,6 +30,10 @@ elif [[ -e /etc/debian_version ]]; then
 	os="debian"
 	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
 	group_name="nogroup"
+elif [[ -e /etc/system-release ]]; then
+	os="oracle"
+	os_version=$(grep -oE '[0-9]+' /etc/system-release | head -1)
+	group_name="nobody"
 elif [[ -e /etc/centos-release ]]; then
 	os="centos"
 	os_version=$(grep -oE '[0-9]+' /etc/centos-release | head -1)
@@ -40,7 +44,7 @@ elif [[ -e /etc/fedora-release ]]; then
 	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
-Supported distributions are Ubuntu, Debian, CentOS, and Fedora."
+Supported distributions are Ubuntu, Debian, CentOS, Oracle Linux and Fedora."
 	exit
 fi
 
@@ -59,6 +63,12 @@ fi
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
 	echo "CentOS 7 or higher is required to use this installer.
 This version of CentOS is too old and unsupported."
+	exit
+fi
+
+if [[ "$os" == "oracle" && "$os_version" -lt 7 ]]; then
+	echo "Oracle Linux 7 or higher is required to use this installer.
+This version of Oracle Linux is too old and unsupported."
 	exit
 fi
 
@@ -197,7 +207,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall in the rare case where one is not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
-		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+		if [[ "$os" == "centos" || "$os" == "fedora" || "$os" == "oracle" ]]; then
 			firewall="firewalld"
 			# We don't want to silently enable firewalld, so we give a subtle warning
 			# If the user continues, firewalld will be installed and enabled during setup
@@ -220,6 +230,9 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
+	elif [[ "$os" = "oracle" ]]; then
+		dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+		dnf install -y openvpn openssl ca-certificates tar $firewall
 	else
 		# Else, OS must be Fedora
 		dnf install -y openvpn openssl ca-certificates tar $firewall
@@ -541,7 +554,7 @@ else
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					apt-get remove --purge -y openvpn
 				else
-					# Else, OS must be CentOS or Fedora
+					# Else, OS must be CentOS, Oracle Linux or Fedora
 					yum remove -y openvpn
 				fi
 				echo
