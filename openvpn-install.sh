@@ -96,6 +96,28 @@ new_client () {
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
 	echo "</tls-crypt>"
 	} > ~/"$client".ovpn
+
+	# add address to ccd
+	last_address=$(grep -oE '\b[0-9]{1,3}(\.[0-9]{1,3}){3}\b' /etc/openvpn/server/ipp.txt |
+		      sort -t . -k 3,3n -k 4,4n |
+		      tail -n1
+		      )
+	IFS="." read -ra array <<< "$last_address"
+
+	if [[ ${array[3]} -gt 253 ]]; then
+		array[3]=0
+		let next=${array[2]}+1
+		array[2]=$next
+	else
+		let next=${array[3]}+1
+		array[3]=$next
+	fi
+
+	printf -v new_ip "%s." "${array[@]}"
+	new_ip=${new_ip%?}
+	echo "$client,$new_ip" >> /etc/openvpn/server/ipp.txt
+	echo "ifconfig-push $new_ip 255.255.0.0" >> /etc/openvpn/server/ccd/"$client"
+	#don't give last 2 addresses (10.8.254.253 - 10.8.254.254)
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
