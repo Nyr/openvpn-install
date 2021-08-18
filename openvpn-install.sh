@@ -73,7 +73,7 @@ if [[ "$EUID" -ne 0 ]]; then
 	exit
 fi
 
-if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
+if [[ ! -e /dev/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
 	echo "The system does not have the TUN device available.
 TUN needs to be enabled before running this installer."
 	exit
