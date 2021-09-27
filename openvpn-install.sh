@@ -86,9 +86,12 @@ fi
 
 if [[ "`sudo rpm -ql epel-release`" == "package epel-release is not installed" ]]; then
 	echo "EPEL is not installed, please install EPEL"
+<<<<<<< HEAD
 	echo "For RedHat 8.x: https://linuxconfig.org/redhat-8-epel-install-guide"
 	echo "For RedHat 7.x: https://www.unixmen.com/install-epel-repository-centos-rhel-7/"
 	echo "or search by your self :D" 
+=======
+>>>>>>> 0a78c167f346ca02fb3340cb318657c683e56cee
 	exit
 fi 
 
