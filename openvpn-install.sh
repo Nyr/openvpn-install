@@ -185,8 +185,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "Select a DNS server for the clients:"
 	echo "   1) Current system resolvers"
 	echo "   2) Google"
-	echo "   3) 1.1.1.1"
-	echo "   4) OpenDNS"
+	echo "   3) Cloudflare"
+	echo "   4) Cisco OpenDNS"
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
 	read -p "DNS server [1]: " dns
@@ -194,6 +194,51 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
+	case "$dns" in
+		3)
+			echo "Select a Cloudflare server for the client:"
+			echo "   1) Standard"
+			echo "   2) Malware blocking only"
+			echo "   3) Malware and adult content blocking"
+			read -p "Cloudflare server [1]: " cloudflare
+			until [[ -z "$cloudflare" || "$cloudflare" =~ ^[1-3]$ ]]; do
+				echo "$cloudflare: invalid selection."
+				read -p "Cloudflare server [1]: " cloudflare
+			done
+		;;
+		4)
+			echo "Select a Cisco OpenDNS server for the client:"
+			echo "   1) Standard (DNS servers with custom filtering that protects your device from malware)"
+			echo "   2) FamilyShield (OpenDNS servers that provide adult content blocking)"
+			read -p "Cisco OpenDNS server [1]: " opendns
+			until [[ -z "$opendns" || "$opendns" =~ ^[1-2]$ ]]; do
+				echo "$opendns: invalid selection."
+				read -p "Cisco OpenDNS server [1]: " opendns
+			done
+		;;
+		5)
+			echo "Select a Quad9 server for the client:"
+			echo "   1) Standard (Regular DNS servers which provide protection from phishing and spyware. It include blocklist, DNSSEC validation, and other security features.)"
+			echo "   2) Unsecured (Regular DNS servers which provide protection from phishing and spyware. It include blocklist, DNSSEC validation, and other security features.)"
+			echo "   3) ECS support (EDNS Client-Subnet is a method that includes components of end-user IP address data in requests that are sent to authoritative DNS servers. It provides security blocklist, DNSSEC, EDNS Client-Subnet.)"
+			read -p "Quad9 server [1]: " quad9
+			until [[ -z "$quad9" || "$quad9" =~ ^[1-3]$ ]]; do
+				echo "$quad9: invalid selection."
+				read -p "Quad9 server [1]: " quad9
+			done
+		;;
+		6)
+			echo "Select a AdGuard server for the client:"
+			echo "   1) Default (These servers provide blocking ads, tracking and phishing)"
+			echo "   2) Unsecured (These servers provide the Default features + Blocking adult websites + Safe search)"
+			echo "   3) ECS support (These servers provide a secure and reliable connection, but they don't filter anything like the \"Default\" and \"Family protection\" servers.)"
+			read -p "AdGuard server [1]: " adguard
+			until [[ -z "$adguard" || "$adguard" =~ ^[1-3]$ ]]; do
+				echo "$adguard: invalid selection."
+				read -p "AdGuard server [1]: " adguard
+			done
+		;;
+	esac
 	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
@@ -303,22 +348,88 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 		2)
 			echo 'push "dhcp-option DNS 8.8.8.8"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 8.8.4.4"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 2001:4860:4860::8888"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 2001:4860:4860::8844"' >> /etc/openvpn/server/server.conf
 		;;
 		3)
-			echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server/server.conf
+			case "$cloudflare" in
+				1)
+					echo 'push "dhcp-option DNS 1.1.1.1"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 1.0.0.1"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1111"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1001"' >> /etc/openvpn/server/server.conf
+				;;
+				2)
+					echo 'push "dhcp-option DNS 1.1.1.2"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 1.0.0.2"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1112"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1002"' >> /etc/openvpn/server/server.conf
+				;;
+				3)
+					echo 'push "dhcp-option DNS 1.1.1.3"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 1.0.0.3"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1113"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2606:4700:4700::1003"' >> /etc/openvpn/server/server.conf
+				;;
+			esac
 		;;
 		4)
-			echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server/server.conf
+			case "$opendns" in
+				1)
+					echo 'push "dhcp-option DNS 208.67.222.222"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 208.67.220.220"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:119:35::35"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:119:53::53"' >> /etc/openvpn/server/server.conf
+				;;
+				2)
+					echo 'push "dhcp-option DNS 208.67.222.123"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 208.67.220.123"' >> /etc/openvpn/server/server.conf
+				;;
+			esac
 		;;
 		5)
-			echo 'push "dhcp-option DNS 9.9.9.9"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 149.112.112.112"' >> /etc/openvpn/server/server.conf
+			case "$quad9" in
+				1)
+					echo 'push "dhcp-option DNS 9.9.9.9"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 149.112.112.112"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::fe"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::fe:9"' >> /etc/openvpn/server/server.conf
+				;;
+				2)
+					echo 'push "dhcp-option DNS 9.9.9.10"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 149.112.112.10"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::10"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::fe:10"' >> /etc/openvpn/server/server.conf
+				;;
+				3)
+					echo 'push "dhcp-option DNS 9.9.9.11"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 149.112.112.11"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::11"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2620:fe::fe:11"' >> /etc/openvpn/server/server.conf
+				;;
+			esac
 		;;
 		6)
-			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
-			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
+			case "$adguard" in
+				1)
+					echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::ad1:ff"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::ad2:ff"' >> /etc/openvpn/server/server.conf
+				;;
+				2)
+					echo 'push "dhcp-option DNS 94.140.14.15"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 94.140.14.15"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::bad1:ff"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::bad2:ff"' >> /etc/openvpn/server/server.conf
+				;;
+				3)
+					echo 'push "dhcp-option DNS 94.140.14.140"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 94.140.14.141"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::1:ff"' >> /etc/openvpn/server/server.conf
+					echo 'push "dhcp-option DNS 2a10:50c0::2:ff"' >> /etc/openvpn/server/server.conf
+				;;
+			esac
 		;;
 	esac
 	echo "keepalive 10 120
