@@ -79,7 +79,7 @@ TUN needs to be enabled before running this installer."
 	exit
 fi
 
-new_client () {
+generate_client_config () {
 	# Generates the custom client.ovpn
 	{
 	cat /etc/openvpn/server/client-common.txt
@@ -429,7 +429,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
 	systemctl enable --now openvpn-server@server.service
 	# Generates the custom client.ovpn
-	new_client
+	generate_client_config
 	echo
 	echo "Finished!"
 	echo
@@ -441,9 +441,10 @@ else
 	echo
 	echo "Select an option:"
 	echo "   1) Add a new client"
-	echo "   2) Revoke an existing client"
-	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
+	echo "   2) Re-generate an existing client's config file (.ovpn)"
+	echo "   3) Revoke an existing client"
+	echo "   4) Remove OpenVPN"
+	echo "   5) Exit"
 	read -p "Option: " option
 	until [[ "$option" =~ ^[1-4]$ ]]; do
 		echo "$option: invalid selection."
@@ -463,12 +464,49 @@ else
 			cd /etc/openvpn/server/easy-rsa/
 			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
 			# Generates the custom client.ovpn
-			new_client
+			generate_client_config
 			echo
 			echo "$client added. Configuration available in:" ~/"$client.ovpn"
 			exit
 		;;
 		2)
+			# This option could be documented a bit better and maybe even be simplified
+			# ...but what can I say, I want some sleep too
+			number_of_clients=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep -c "^V")
+			if [[ "$number_of_clients" = 0 ]]; then
+					echo
+					echo "There are no existing clients!"
+					exit
+			fi
+			echo
+			echo "Select the client config to be re-generated:"
+			tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
+			read -p "Client: " client_number
+			until [[ "$client_number" =~ ^[0-9]+$ && "$client_number" -le "$number_of_clients" ]]; do
+					echo "$client_number: invalid selection."
+					read -p "Client: " client_number
+			done
+			client=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | sed -n "$client_number"p)
+			echo
+			read -p "Confirm $client config file re-generation? [y/N]: " regen
+			until [[ "$regen" =~ ^[yYnN]*$ ]]; do
+					echo "$regen: invalid selection."
+					read -p "Confirm $client config file re-generation? [y/N]: " regen
+			done
+			if [[ "$regen" =~ ^[yY]$ ]]; then
+					##
+					generate_client_config
+					##
+					echo
+					echo "$client config file re-generated!"
+					echo "Configuration available in:" ~/"$client.ovpn"
+			else
+					echo
+					echo "$client config file re-generation aborted!"
+			fi
+			exit
+		;;
+		3)
 			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			number_of_clients=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep -c "^V")
@@ -508,7 +546,7 @@ else
 			fi
 			exit
 		;;
-		3)
+		4)
 			echo
 			read -p "Confirm OpenVPN removal? [y/N]: " remove
 			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
@@ -560,7 +598,7 @@ else
 			fi
 			exit
 		;;
-		4)
+		5)
 			exit
 		;;
 	esac
