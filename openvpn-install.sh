@@ -195,11 +195,62 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		read -p "DNS server [1]: " dns
 	done
 	echo
+	echo "Setup CA password?"
+	echo "   1) No"
+	echo "   2) Yes"
+	read -p "CA password? [1]: " ca_pass_option
+	until [[ -z "$ca_pass_option" || "$ca_pass_option" =~ ^[12]$ ]]; do
+		echo "$ca_pass_option: invalid selection."
+		read -p "CA password? [1]: " ca_pass_option
+	done
+	case "$ca_pass_option" in
+		1|"") 
+		ca_pass_option=nopass
+		;;
+		2) 
+		ca_pass_option=""
+		;;
+	esac
+	echo
+	echo "Setup VPN-server password?"
+	echo "   1) No"
+	echo "   2) Yes"
+	read -p "server cert password? [1]: " srv_pass_option
+	until [[ -z "$srv_pass_option" || "$srv_pass_option" =~ ^[12]$ ]]; do
+		echo "$srv_pass_option: invalid selection."
+		read -p "server cert password? [1]: " srv_pass_option
+	done
+	case "$srv_pass_option" in
+		1|"") 
+		srv_pass_option=nopass
+		;;
+		2) 
+		srv_pass_option=""
+		;;
+	esac
+	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
 	# Allow a limited set of characters to avoid conflicts
 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 	[[ -z "$client" ]] && client="client"
+	echo
+	echo "Setup client cert password?"
+	echo "   1) No"
+	echo "   2) Yes"
+	read -p "Client cert password? [1]: " client_pass_option
+	until [[ -z "$client_pass_option" || "$client_pass_option" =~ ^[12]$ ]]; do
+		echo "$client_pass_option: invalid selection."
+		read -p "Client cert password? [1]: " client_pass_option
+	done
+	case "$client_pass_option" in
+		1|"") 
+		client_pass_option=nopass
+		;;
+		2) 
+		client_pass_option=""
+		;;
+	esac
 	echo
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall if firewalld or iptables are not already available
@@ -240,12 +291,12 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	mkdir -p /etc/openvpn/server/easy-rsa/
 	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
 	chown -R root:root /etc/openvpn/server/easy-rsa/
-	cd /etc/openvpn/server/easy-rsa/
+	cd /etc/openvpn/server/easy-rsa/\
 	# Create the PKI, set up the CA and the server and client certificates
 	./easyrsa init-pki
-	./easyrsa --batch build-ca
-	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-server-full server
-	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client"
+	./easyrsa --batch build-ca "$ca_pass_option"
+	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-server-full server "$srv_pass_option"
+	EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" "$client_pass_option"
 	EASYRSA_CRL_DAYS=3650 ./easyrsa gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
@@ -461,7 +512,25 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
-			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client"
+			echo
+			echo "Setup client cert password?"
+			echo "   1) No"
+			echo "   2) Yes"
+			read -p "Client cert password? [1]: " client_pass_option
+			until [[ -z "$client_pass_option" || "$client_pass_option" =~ ^[12]$ ]]; do
+				echo "$client_pass_option: invalid selection."
+				read -p "Client cert password? [1]: " client_pass_option
+			done
+			case "$client_pass_option" in
+				1|"") 
+				client_pass_option=nopass
+				;;
+				2) 
+				client_pass_option=""
+				;;
+			esac
+			echo
+			EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" "$client_pass_option"
 			# Generates the custom client.ovpn
 			new_client
 			echo
