@@ -46,8 +46,12 @@ If using OpenVZ, ask your provider to enable full netfilter support."
 fi
 
 if [[ -e /etc/debian_version ]]; then
-	os="debian"
 	group_name="nogroup"
+	if grep -qs "20.04" /etc/os-release; then
+		os="ubuntu-20.04"
+	else
+		os="debian"
+	fi
 elif [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
 	os="centos"
 	group_name="nobody"
@@ -98,7 +102,7 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			read -p "Select an option: " option
 		done
 		case "$option" in
-			1) 
+			1)
 			echo
 			echo "Tell me a name for the client certificate."
 			read -p "Client name: " unsanitized_client
@@ -159,7 +163,7 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 			fi
 			exit
 			;;
-			3) 
+			3)
 			echo
 			read -p "Do you really want to remove OpenVPN? [y/N]: " remove
 			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
@@ -189,7 +193,7 @@ if [[ -e /etc/openvpn/server/server.conf ]]; then
 				rm -rf /etc/openvpn/server
 				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 				rm -f /etc/sysctl.d/30-openvpn-forward.conf
-				if [[ "$os" = "debian" ]]; then
+				if [[ "$os" == "debian" ]] || [[ "$os" == "ubuntu-20.04" ]]; then
 					apt-get remove --purge -y openvpn
 				else
 					yum remove openvpn -y
@@ -245,10 +249,10 @@ else
 		read -p "Protocol [1]: " protocol
 	done
 	case "$protocol" in
-		1|"") 
+		1|"")
 		protocol=udp
 		;;
-		2) 
+		2)
 		protocol=tcp
 		;;
 	esac
@@ -294,6 +298,13 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		# Google Authenticator configuration
 	    addgroup gauth
 	    useradd -g gauth gauth
+	elif [[ "$os" == "ubuntu-20.04" ]]; then
+		apt-get update
+		apt-get install openvpn iptables openssl ca-certificates -y
+		apt-get install libqrencode4 libpam-google-authenticator -y
+		# Google Authenticator configuration
+		addgroup gauth
+		useradd -g gauth gauth
 	elif [[ "$os" == "amazon-linux" ]]; then
 		amazon-linux-extras install epel -y
 		yum install openvpn iptables openssl ca-certificates tar -y
@@ -402,7 +413,7 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 	fi
 	# Authenticator config
 	mkdir -p /usr/lib/openvpn/
-	if [[ "$os" = "debian" ]]; then
+	if [[ "$os" == "debian" ]] || [[ "$os" == "ubuntu-20.04" ]]; then
 		echo "plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so openvpn" >> /etc/openvpn/server/server.conf
 		ln -s /usr/lib/x86_64-linux-gnu/openvpn/plugins/openvpn-plugin-auth-pam.so /usr/lib/openvpn/openvpn-plugin-auth-pam.so
 		echo "auth required /lib/x86_64-linux-gnu/security/pam_google_authenticator.so secret=/etc/openvpn/google-authenticator/\${USER} user=gauth forward_pass" > /etc/pam.d/openvpn
