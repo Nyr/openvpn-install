@@ -407,6 +407,7 @@ persist-key
 persist-tun
 status openvpn-status.log
 verb 3
+reneg-sec 28800
 crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 	if [[ "$protocol" = "udp" ]]; then
 		echo "explicit-exit-notify" >> /etc/openvpn/server/server.conf
@@ -537,6 +538,7 @@ remote-cert-tls server
 auth SHA512
 cipher AES-256-CBC
 verb 3
+reneg-sec 28800
 auth-user-pass" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
 	systemctl enable --now openvpn-server@server.service
