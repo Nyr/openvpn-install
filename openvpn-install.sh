@@ -236,9 +236,9 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
-	# The latest easy-rsa release is not yet compatible with Ubuntu 22.04
+	# The latest easy-rsa stable release is not yet compatible with Ubuntu 22.04
 	if [[ "$os" == "ubuntu" && "$os_version" -eq 2204 ]]; then
-		easy_rsa_url='https://wg.nyr.be/download/EasyRSA-bf19e79.tgz'
+		easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.9-rc1/EasyRSA-v3.0.9-rc1.tgz'
 	else
 		easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.0.8/EasyRSA-3.0.8.tgz'
 	fi
