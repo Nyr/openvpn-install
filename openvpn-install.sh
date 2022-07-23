@@ -441,11 +441,12 @@ else
 	echo
 	echo "Select an option:"
 	echo "   1) Add a new client"
-	echo "   2) Revoke an existing client"
-	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
+	echo "   2) Add Multiple clients"
+	echo "   3) Revoke an existing client"
+	echo "   4) Remove OpenVPN"
+	echo "   5) Exit"
 	read -p "Option: " option
-	until [[ "$option" =~ ^[1-4]$ ]]; do
+	until [[ "$option" =~ ^[1-5]$ ]]; do
 		echo "$option: invalid selection."
 		read -p "Option: " option
 	done
@@ -468,7 +469,29 @@ else
 			echo "$client added. Configuration available in:" ~/"$client.ovpn"
 			exit
 		;;
+		 # Adding 15-20 clinets is a little boring when you must run the script many times on a new server
+                 # so I added option 2 to add all clients at the same time :)
 		2)
+		        echo
+			echo "Enter your names seperated by space:"
+			echo "Example: name1 name2 name3 "
+			read -r -p "Names: " -a names
+			for unsanitized_client in "${names[@]}"; do
+			     client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+			     while [[ -z "$client" || -e /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt ]]; do
+		                   echo "$client: invalid name."
+				   read -p "Name: " unsanitized_client
+				   client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
+			     done  
+			     cd /etc/openvpn/server/easy-rsa/
+			     EASYRSA_CERT_EXPIRE=3650 ./easyrsa build-client-full "$client" nopass
+			     new_client
+			     echo
+			     echo "$client added. Configuration available in:" ~/"$client.ovpn"
+			done    
+			exit
+		;;
+		3)
 			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			number_of_clients=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep -c "^V")
@@ -508,7 +531,7 @@ else
 			fi
 			exit
 		;;
-		3)
+		4)
 			echo
 			read -p "Confirm OpenVPN removal? [y/N]: " remove
 			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
@@ -560,7 +583,7 @@ else
 			fi
 			exit
 		;;
-		4)
+		5)
 			exit
 		;;
 	esac
