@@ -184,11 +184,11 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo
 	echo "Select a DNS server for the clients:"
 	echo "   1) Current system resolvers"
-	echo "   2) Google"
-	echo "   3) 1.1.1.1"
-	echo "   4) OpenDNS"
-	echo "   5) Quad9"
-	echo "   6) AdGuard"
+	echo "   2) Google 8.8.8.8"
+	echo "   3) Cloudflare 1.1.1.1"
+	echo "   4) OpenDNS 208.67.222.222"
+	echo "   5) Quad9 9.9.9.9"
+	echo "   6) AdGuard 94.140.14.14"
 	read -p "DNS server [1]: " dns
 	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
 		echo "$dns: invalid selection."
