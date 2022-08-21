@@ -290,13 +290,13 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 		1|"")
 			# Locate the proper resolv.conf
 			# Needed for systems running systemd-resolved
-			if grep -q '^nameserver 127.0.0.53' "/etc/resolv.conf"; then
-				resolv_conf="/run/systemd/resolve/resolv.conf"
-			else
+			if grep '^nameserver' "/etc/resolv.conf" | grep -qv '127.0.0.53' ; then
 				resolv_conf="/etc/resolv.conf"
+			else
+				resolv_conf="/run/systemd/resolve/resolv.conf"
 			fi
 			# Obtain the resolvers from resolv.conf and use them for OpenVPN
-			grep -v '^#\|^;' "$resolv_conf" | grep '^nameserver' | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | while read line; do
+			grep -v '^#\|^;' "$resolv_conf" | grep '^nameserver' | grep -v '127.0.0.53' | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | while read line; do
 				echo "push \"dhcp-option DNS $line\"" >> /etc/openvpn/server/server.conf
 			done
 		;;
