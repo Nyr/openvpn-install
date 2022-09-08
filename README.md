@@ -18,3 +18,36 @@ You can get a VPS from just 2€/month at [AlphaVPS](https://alphavps.com/client
 ### Donations
 
 If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [cryptocurrency](https://pastebin.com/raw/M2JJpQpC). Thanks!
+
+
+### Create/disable another user
+
+`bash openvpn-install.sh`
+
+### Install client on ubuntu server
+```
+sudo apt update
+sudo apt install openvpn
+```
+
+Copy <USERNAME>.ovpn to the target machine
+
+``` sudo cp <USERNAME>.ovpn /etc/openvpn/client.conf
+sudo service openvpn@client start
+```
+
+### Some note
+
+partial routing (if do not want redirect all traffic to the vpn server. If you have a machine that host public app e.g. website server, you will need this setting.)
+
+in the client side edit <USERNAME>.ovpn
+add 
+  
+```
+route-nopull
+route 10.8.0.0 255.255.255.0
+```
+
+or on the vpn server side
+remove
+  ``` redirect-gateway def1```
