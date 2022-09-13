@@ -48,6 +48,14 @@ route-nopull
 route 10.8.0.0 255.255.255.0
 ```
 
+make a file norouting.bash
+`sed -i '/verb 3/r nopuul.txt' $1`
+
+then you can add the setting to the usercofig with
+`bash norouting.bash <USERNAME>.ovpn`
+
 or on the vpn server side
 remove
   ``` redirect-gateway def1```
+  
+  
