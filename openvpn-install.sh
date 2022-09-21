@@ -189,8 +189,9 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "   4) OpenDNS"
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
+	echo "   7) Aliyun"
 	read -p "DNS server [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
+	until [[ -z "$dns" || "$dns" =~ ^[1-7]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
@@ -320,6 +321,10 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
 		;;
+		7)
+			echo 'push "dhcp-option DNS 223.5.5.5"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS 223.6.6.6"' >> /etc/openvpn/server/server.conf
+		;;
 	esac
 	echo "keepalive 10 120
 cipher AES-256-CBC
@@ -441,11 +446,12 @@ else
 	echo
 	echo "Select an option:"
 	echo "   1) Add a new client"
-	echo "   2) Revoke an existing client"
-	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
+	echo "   2) Show existing client"
+	echo "   3) Revoke an existing client"
+	echo "   4) Remove OpenVPN"
+	echo "   5) Exit"
 	read -p "Option: " option
-	until [[ "$option" =~ ^[1-4]$ ]]; do
+	until [[ "$option" =~ ^[1-5]$ ]]; do
 		echo "$option: invalid selection."
 		read -p "Option: " option
 	done
@@ -469,6 +475,10 @@ else
 			exit
 		;;
 		2)
+			echo "Exiting client:"
+			tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep "^V" | cut -d '=' -f 2 | nl -s ') '
+		;;
+		3)
 			# This option could be documented a bit better and maybe even be simplified
 			# ...but what can I say, I want some sleep too
 			number_of_clients=$(tail -n +2 /etc/openvpn/server/easy-rsa/pki/index.txt | grep -c "^V")
@@ -508,7 +518,7 @@ else
 			fi
 			exit
 		;;
-		3)
+		4)
 			echo
 			read -p "Confirm OpenVPN removal? [y/N]: " remove
 			until [[ "$remove" =~ ^[yYnN]*$ ]]; do
@@ -560,7 +570,7 @@ else
 			fi
 			exit
 		;;
-		4)
+		5)
 			exit
 		;;
 	esac
