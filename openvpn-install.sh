@@ -49,12 +49,14 @@ if [[ "$os" == "ubuntu" && "$os_version" -lt 1804 ]]; then
 This version of Ubuntu is too old and unsupported."
 	exit
 fi
-
-if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
-	echo "Debian 9 or higher is required to use this installer.
-This version of Debian is too old and unsupported."
-	exit
-fi
+################################################################################################################
+# WE COMMENTED OUT THIS LINE TO BYPASS DEBIAN VERSION CHECKS THAT KALI DOESN'T MATCH (IT STILL WORKS THE SAME) #
+################################################################################################################
+#if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
+#	echo "Debian 9 or higher is required to use this installer.
+#This version of Debian is too old and unsupported."
+#	exit
+#fi
 
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
 	echo "CentOS 7 or higher is required to use this installer.
@@ -264,6 +266,14 @@ YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
 7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
 ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
+	
+################################################################
+# HERE WE ADDED "duplicate-cn" TO PREVENT EXTRA CLIENTS FROM   #
+# CAUSING THE ORIGINAL CONNECTION TO DROP. "duplicate-cn" in   #
+# THE Server.conf HELP TO VERIFY MULTIPLE CLIENTS AS PER THE.  #
+# STANDARD OpenVPN USAGE. JUST ONE LINE LET'S YOU MAKE SEVERAL #
+# CONNECTIONS, Home, Work, Office, Router, Phone, etc. ENJOY!  #
+################################################################
 	# Generate server.conf
 	echo "local $ip
 port $port
