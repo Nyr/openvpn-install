@@ -38,6 +38,15 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif [[ -e /etc/alpine-release ]]; then
+	os="alpine"
+	os_version=$(cat /etc/alpine-release | cut -d '"' -f 2 | tr -d '.')
+	group_name="nobody"
+	if [[ ! -d /dev/net ]]; then
+		mkdir -p /dev/net && \
+		mknod /dev/net/tun c 10 200 && \
+		chmod 600 /dev/net/tun
+	fi
 else
 	echo "This installer seems to be running on an unsupported distribution.
 Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora."
@@ -99,8 +108,13 @@ new_client () {
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
-	# Detect some Debian minimal setups where neither wget nor curl are installed
-	if ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
+	# Detect some minimal setups where neither wget nor curl are installed
+	if [[ "$os" = "alpine" ]] && ( ! hash curl || ! hash iptables ) 2>/dev/null; then
+		echo "curl and iptables are required to use this installer."
+		read -n1 -r -p "Press any key to install curl and iptables and continue..."
+		apk update
+		apk add curl iptables
+	elif ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
 		echo "Wget is required to use this installer."
 		read -n1 -r -p "Press any key to install Wget and continue..."
 		apt-get update
@@ -129,7 +143,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
 		# Get public IP and sanitize with grep
-		get_public_ip=$(grep -m 1 -oE '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' <<< "$(wget -T 10 -t 1 -4qO- "http://ip1.dynupdate.no-ip.com/" || curl -m 10 -4Ls "http://ip1.dynupdate.no-ip.com/")")
+		get_public_ip=$(grep -m 1 -oE '^[0-9]{1,3}(\.[0-9]{1,3}){3}$' <<< "$( [[ "$os" != "alpine" ]] && hash wget > /dev/null 2>&1 && wget -T 10 -t 1 -4qO- "http://ip1.dynupdate.no-ip.com/" || curl -m 10 -4Ls "http://ip1.dynupdate.no-ip.com/")")
 		read -p "Public IPv4 address / hostname [$get_public_ip]: " public_ip
 		# If the checkip service is unavailable and user didn't provide input, ask again
 		until [[ -n "$get_public_ip" || -n "$public_ip" ]]; do
@@ -203,7 +217,9 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall if firewalld or iptables are not already available
-	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
+	if [[ "$os" = "alpine" ]]; then
+		firewall="iptables"
+	elif ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
 		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
 			firewall="firewalld"
 			# We don't want to silently enable firewalld, so we give a subtle warning
@@ -216,7 +232,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	fi
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
-	if systemd-detect-virt -cq; then
+	if [[ "$os" != "alpine" ]] && systemd-detect-virt -cq; then
 		mkdir /etc/systemd/system/openvpn-server@server.service.d/ 2>/dev/null
 		echo "[Service]
 LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
@@ -227,12 +243,17 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
+	elif [[ "$os" = "alpine" ]]; then
+		apk update
+		apk add openvpn openssl $firewall
 	else
 		# Else, OS must be Fedora
 		dnf install -y openvpn openssl ca-certificates tar $firewall
 	fi
 	# If firewalld was just installed, enable it
-	if [[ "$firewall" == "firewalld" ]]; then
+	if [[ "$os" = "alpine" ]]; then
+		rc-update add iptables default
+	elif [[ "$firewall" == "firewalld" ]]; then
 		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
@@ -343,7 +364,20 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# Enable without waiting for a reboot or service restart
 		echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 	fi
-	if systemctl is-active --quiet firewalld.service; then
+	if [[ "$os" = "alpine" ]]; then
+		iptables_path=$(command -v iptables)
+		$iptables_path -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+		$iptables_path -I INPUT -p $protocol --dport $port -j ACCEPT
+		$iptables_path -I FORWARD -s 10.8.0.0/24 -j ACCEPT
+		$iptables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+		if [[ -n "$ip6" ]]; then
+			ip6tables_path=$(command -v ip6tables)
+			$ip6tables_path -t nat -A POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
+			$ip6tables_path -I FORWARD -s fddd:1194:1194:1194::/64 -j ACCEPT
+			$ip6tables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+		fi
+		rc-update add openvpn default
+	elif systemctl is-active --quiet firewalld.service; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
 		# We don't use --add-service=openvpn because that would only work with
@@ -427,7 +461,11 @@ cipher AES-256-CBC
 ignore-unknown-option block-outside-dns
 verb 3" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
-	systemctl enable --now openvpn-server@server.service
+	if [[ "$os" = "alpine" ]]; then
+		rc-service openvpn start
+	else
+		systemctl enable --now openvpn-server@server.service
+	fi
 	# Generates the custom client.ovpn
 	new_client
 	echo
@@ -518,7 +556,20 @@ else
 			if [[ "$remove" =~ ^[yY]$ ]]; then
 				port=$(grep '^port ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
 				protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
-				if systemctl is-active --quiet firewalld.service; then
+				if [[ "$os" = "alpine" ]]; then
+					# remove iptables rules
+					iptables_path=$(command -v iptables)
+					$iptables_path -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+					$iptables_path -D INPUT -p $protocol --dport $port -j ACCEPT
+					$iptables_path -D FORWARD -s 10.8.0.0/24 -j ACCEPT
+					$iptables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+					if grep -qs "server-ipv6" /etc/openvpn/server/server.conf; then
+						ip6tables_path=$(command -v ip6tables)
+						$ip6tables_path -t nat -D POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
+						$ip6tables_path -D FORWARD -s fddd:1194:1194:1194::/64 -j ACCEPT
+						$ip6tables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+					fi
+				elif systemctl is-active --quiet firewalld.service; then
 					ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
 					# Using both permanent and not permanent rules to avoid a firewalld reload.
 					firewall-cmd --remove-port="$port"/"$protocol"
@@ -541,12 +592,20 @@ else
 				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
 					semanage port -d -t openvpn_port_t -p "$protocol" "$port"
 				fi
-				systemctl disable --now openvpn-server@server.service
+				if [[ "$os" = "alpine" ]]; then
+					rc-service openvpn stop
+					rc-update del openvpn
+				else
+					systemctl disable --now openvpn-server@server.service
+				fi
 				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 				rm -f /etc/sysctl.d/99-openvpn-forward.conf
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					rm -rf /etc/openvpn/server
 					apt-get remove --purge -y openvpn
+				elif [[ "$os" = "alpine" ]]; then
+					rm -rf /etc/openvpn/server
+					apk del openvpn
 				else
 					# Else, OS must be CentOS or Fedora
 					yum remove -y openvpn
