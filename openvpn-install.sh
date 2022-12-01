@@ -240,7 +240,7 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	mkdir -p /etc/openvpn/server/easy-rsa/
 	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
 	chown -R root:root /etc/openvpn/server/easy-rsa/
-	cd /etc/openvpn/server/easy-rsa/
+	cd /etc/openvpn/server/easy-rsa/ || exit
 	# Create the PKI, set up the CA and the server and client certificates
 	./easyrsa --batch init-pki
 	./easyrsa --batch build-ca nopass
@@ -460,7 +460,7 @@ else
 				read -p "Name: " unsanitized_client
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
-			cd /etc/openvpn/server/easy-rsa/
+			cd /etc/openvpn/server/easy-rsa/ || exit
 			./easyrsa --batch --days=3650 build-client-full "$client" nopass
 			# Generates the custom client.ovpn
 			new_client
@@ -493,7 +493,7 @@ else
 				read -p "Confirm $client revocation? [y/N]: " revoke
 			done
 			if [[ "$revoke" =~ ^[yY]$ ]]; then
-				cd /etc/openvpn/server/easy-rsa/
+				cd /etc/openvpn/server/easy-rsa/ || exit
 				./easyrsa --batch revoke "$client"
 				./easyrsa --batch --days=3650 gen-crl
 				rm -f /etc/openvpn/server/crl.pem
