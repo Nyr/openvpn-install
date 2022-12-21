@@ -106,6 +106,12 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		apt-get update
 		apt-get install -y wget
 	fi
+	# Address improper easy-rsa installations on fresh debian instances
+	if [[ "$os" == "debian" ]]; then
+		echo "Removing improper easy-rsa packages for Debian prior to installation."
+		read -n1 -r -p "Press any key to remove easy-rsa and continue..."
+		apt-get remove -y easy-rsa
+	fi
 	clear
 	echo 'Welcome to this OpenVPN road warrior installer!'
 	# If system has a single IPv4, it is selected automatically. Else, ask the user
