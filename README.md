@@ -15,6 +15,8 @@ Once it ends, you can run it again to add more users, remove some of them or eve
 ### I want to run my own VPN but don't have a server for that
 You can get a VPS from just 2€/month at [AlphaVPS](https://alphavps.com/clients/aff.php?aff=474&pid=422).
 
+Google Cloud e2-micro VM instance is always [free](https://cloud.google.com/free/docs/free-cloud-features#compute) in us-west1, us-central1 and us-east1 regions. Includes 1GB RAM, 30GB disk and 1 GB Outbound network traffic.
+
 ### Donations
 
 If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [cryptocurrency](https://pastebin.com/raw/M2JJpQpC). Thanks!
