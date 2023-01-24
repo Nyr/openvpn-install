@@ -79,3 +79,7 @@ in /etc/openvpn/server/server.conf
 client-config-dir /etc/openvpn/ccd
 client-to-client
 ```
+  
+Then go to /etc/openvpn/ccd to create file named as user name and put something like (in this example, the ip is set to 10.8.0.101 for the user)
+  
+`ifconfig-push 10.8.0.101 255.255.255.0`
