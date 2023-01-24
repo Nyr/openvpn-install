@@ -71,4 +71,9 @@ or on the vpn server side
 remove
   ``` redirect-gateway def1```
   
-  
+### Client settings
+set ip and enable communication between clients
+in /etc/openvpn/server/server.conf
+
+```client-config-dir /etc/openvpn/ccd
+client-to-client```
