@@ -75,5 +75,7 @@ remove
 set ip and enable communication between clients
 in /etc/openvpn/server/server.conf
 
-```client-config-dir /etc/openvpn/ccd
-client-to-client```
+```
+client-config-dir /etc/openvpn/ccd
+client-to-client
+```
