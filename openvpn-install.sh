@@ -4,7 +4,6 @@
 #
 # Copyright (c) 2013 Nyr. Released under the MIT License.
 
-
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
 	echo 'This installer needs to be run with "bash", not "sh".'
@@ -245,7 +244,14 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	./easyrsa --batch init-pki
 	./easyrsa --batch build-ca nopass
 	./easyrsa --batch --days=3650 build-server-full server nopass
-	./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	echo ""
+	read -e -p "Require password for client certificate [Y/N]: " -i "N" PASSW
+	if [[ "$PASSW" != [yY] ]]; then
+	    ./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	else
+	    ./easyrsa --batch --days=3650 build-client-full "$client"
+	fi
+	echo ""
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
@@ -461,7 +467,14 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
-			./easyrsa --batch --days=3650 build-client-full "$client" nopass
+			echo ""
+	        read -e -p "Require password for client certificate [Y/N]: " -i "N" PASSW
+	        if [[ "$PASSW" != [yY] ]]; then
+	            ./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	        else
+	            ./easyrsa --batch --days=3650 build-client-full "$client"
+	        fi
+	        echo ""
 			# Generates the custom client.ovpn
 			new_client
 			echo
