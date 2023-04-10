@@ -22,33 +22,36 @@ fi
 
 # Detect OS
 # $os_version variables aren't always in use, but are kept here for convenience
-if grep -qs "ubuntu" /etc/os-release; then
-	os="ubuntu"
-	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
-	group_name="nogroup"
-elif [[ -e /etc/debian_version ]]; then
-	os="debian"
-	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
-	group_name="nogroup"
-elif [[ -e /etc/almalinux-release || -e /etc/rocky-release || -e /etc/centos-release ]]; then
-	os="centos"
-	os_version=$(grep -shoE '[0-9]+' /etc/almalinux-release /etc/rocky-release /etc/centos-release | head -1)
-	group_name="nobody"
-elif [[ -e /etc/fedora-release ]]; then
-	os="fedora"
-	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
-	group_name="nobody"
-else
-	echo "This installer seems to be running on an unsupported distribution.
+case $(uname -s) in
+  Linux)
+    if grep -qs "ubuntu" /etc/os-release; then
+      os="ubuntu"
+      os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
+      group_name="nogroup"
+    elif [[ -e /etc/debian_version ]]; then
+      os="debian"
+      os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
+      group_name="nogroup"
+    elif [[ -e /etc/almalinux-release || -e /etc/rocky-release || -e /etc/centos-release ]]; then
+      os="centos"
+      os_version=$(grep -shoE '[0-9]+' /etc/almalinux-release /etc/rocky-release /etc/centos-release | head -1)
+      group_name="nobody"
+    elif [[ -e /etc/fedora-release ]]; then
+      os="fedora"
+      os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
+      group_name="nobody"
+    else
+      echo "This installer seems to be running on an unsupported distribution.
 Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora."
-	exit
-fi
+      exit
+    fi
+    ;;
+  *)
+    echo "This installer only supports Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora Linux. Aborting."
+    exit 1
+    ;;
+esac
 
-if [[ "$os" == "ubuntu" && "$os_version" -lt 1804 ]]; then
-	echo "Ubuntu 18.04 or higher is required to use this installer.
-This version of Ubuntu is too old and unsupported."
-	exit
-fi
 
 if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
 	echo "Debian 9 or higher is required to use this installer.
@@ -98,32 +101,36 @@ new_client () {
 	} > ~/"$client".ovpn
 }
 
+#!/bin/bash
+
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
-	# Detect some Debian minimal setups where neither wget nor curl are installed
-	if ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
-		echo "Wget is required to use this installer."
-		read -n1 -r -p "Press any key to install Wget and continue..."
-		apt-get update
-		apt-get install -y wget
-	fi
-	clear
-	echo 'Welcome to this OpenVPN road warrior installer!'
-	# If system has a single IPv4, it is selected automatically. Else, ask the user
-	if [[ $(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}') -eq 1 ]]; then
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}')
-	else
-		number_of_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
-		echo
-		echo "Which IPv4 address should be used?"
-		ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
-		read -p "IPv4 address [1]: " ip_number
-		until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$number_of_ip" ]]; do
-			echo "$ip_number: invalid selection."
-			read -p "IPv4 address [1]: " ip_number
-		done
-		[[ -z "$ip_number" ]] && ip_number="1"
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
-	fi
+    # Check if wget or curl are installed, and install wget if neither is installed
+    if ! command -v wget &>/dev/null && ! command -v curl &>/dev/null; then
+        echo "Wget is required to use this installer."
+        read -n1 -r -p "Press any key to install Wget and continue..."
+        apt update && apt install -y wget
+    fi
+    
+    clear
+    echo 'Welcome to this OpenVPN road warrior installer!'
+    # If system has a single IPv4, it is selected automatically. Else, ask the user
+    num_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
+    if [[ $num_ip -eq 1 ]]; then
+        ip=$(ip -4 addr show | grep 'inet .* global' | awk '{print $2}' | cut -d'/' -f1)
+    else
+        echo
+        echo "Which IPv4 address should be used?"
+        ip -4 addr show | grep 'inet .* global' | awk '{print $2}' | cut -d'/' -f1 | nl -s ') '
+        read -p "IPv4 address [1]: " ip_number
+        until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$num_ip" ]]; do
+            echo "$ip_number: invalid selection."
+            read -p "IPv4 address [1]: " ip_number
+        done
+        [[ -z "$ip_number" ]] && ip_number="1"
+        ip=$(ip -4 addr show | grep 'inet .* global' | awk '{print $2}' | cut -d'/' -f1 | sed -n "$ip_number"p)
+    fi
+fi
+
 	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
@@ -222,8 +229,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 	fi
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
-		apt-get update
-		apt-get install -y --no-install-recommends openvpn openssl ca-certificates $firewall
+		apt update
+		apt install -y --no-install-recommends openvpn openssl ca-certificates $firewall
 	elif [[ "$os" = "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
@@ -546,7 +553,7 @@ else
 				rm -f /etc/sysctl.d/99-openvpn-forward.conf
 				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 					rm -rf /etc/openvpn/server
-					apt-get remove --purge -y openvpn
+					apt remove --purge -y openvpn
 				else
 					# Else, OS must be CentOS or Fedora
 					yum remove -y openvpn
