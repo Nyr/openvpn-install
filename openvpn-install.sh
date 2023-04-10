@@ -53,17 +53,28 @@ Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora.
 esac
 
 
-if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
-	echo "Debian 9 or higher is required to use this installer.
-This version of Debian is too old and unsupported."
-	exit
-fi
+function check_os_version {
+  local required_version=$1
+  if [[ "$os_version" -lt "$required_version" ]]; then
+    echo "$os_name $required_version or higher is required to use this installer.
+This version of $os_name is too old and unsupported."
+    exit 1
+  fi
+}
 
-if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
-	echo "CentOS 7 or higher is required to use this installer.
-This version of CentOS is too old and unsupported."
-	exit
-fi
+case $os in
+  ubuntu)
+    check_os_version 1804
+    ;;
+  debian)
+    check_os_version 9
+    ;;
+  centos)
+    check_os_version 7
+    ;;
+esac
+
+
 
 # Detect environments where $PATH does not include the sbin directories
 if ! grep -q sbin <<< "$PATH"; then
