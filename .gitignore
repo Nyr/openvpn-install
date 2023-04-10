@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/.vs/VSWorkspaceState.json
+/.vs/slnx.sqlite
+/.vs/ProjectSettings.json
+/.vs/openvpn-install-tim0n3/v17/.wsuo
+/.vs/openvpn-install-tim0n3/v17
+/.vs/openvpn-install-tim0n3/FileContentIndex/read.lock
+/.vs/openvpn-install-tim0n3/FileContentIndex/e8d09c00-2e75-4725-8c35-c0982fea93ac.vsidx
+/.vs/openvpn-install-tim0n3/FileContentIndex
+/.vs/openvpn-install-tim0n3
+/.vs
