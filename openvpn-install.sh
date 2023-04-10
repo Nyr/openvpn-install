@@ -53,7 +53,7 @@ Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora.
 esac
 
 
-function check_os_version {
+function check_os_version () {
   local required_version=$1
   if [[ "$os_version" -lt "$required_version" ]]; then
     echo "$os_name $required_version or higher is required to use this installer.
@@ -111,8 +111,6 @@ new_client () {
 	echo "</tls-crypt>"
 	} > ~/"$client".ovpn
 }
-
-#!/bin/bash
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
     # Check if wget or curl are installed, and install wget if neither is installed
