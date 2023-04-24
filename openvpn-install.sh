@@ -28,7 +28,7 @@ if grep -qs "ubuntu" /etc/os-release; then
 	group_name="nogroup"
 elif [[ -e /etc/debian_version ]]; then
 	os="debian"
-	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
+	os_version=$(grep -oE '[0-9]+|kali-rolling' /etc/debian_version | head -1)
 	group_name="nogroup"
 elif [[ -e /etc/almalinux-release || -e /etc/rocky-release || -e /etc/centos-release ]]; then
 	os="centos"
@@ -50,10 +50,14 @@ This version of Ubuntu is too old and unsupported."
 	exit
 fi
 
-if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
-	echo "Debian 9 or higher is required to use this installer.
-This version of Debian is too old and unsupported."
+if [[ "$os" == "debian" ]]; then
+	if [[ "$os_version" == "kali-rolling" ]]; then
+		echo ""
+	elif [[ "$os_version" -lt 9 ]]; then
+		echo "Debian 9 or higher or Kali-Rolling is required to use this installer.
+This version of Debian/Kali is too old and unsupported."
 	exit
+	fi
 fi
 
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
