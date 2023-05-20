@@ -24,7 +24,22 @@ If you want to show your appreciation, you can donate via [PayPal](https://www.p
 
 `bash openvpn-install.sh`
 
+
+### Make ccd and make a file named as the client username (change 10.10.0.101 to the ip you want to assgin to the client)
+
+```
+sudo mkdir /etc/openvpn/ccd
+
+sudo echo "ifconfig-push 10.10.0.101 255.255.255.0" >/etc/openvon/ccd/client
+
+```
+
 ### Install client on ubuntu server
+
+
+
+
+
 ```
 sudo apt update
 sudo apt install openvpn
@@ -36,7 +51,7 @@ Copy <USERNAME>.ovpn to the target machine
 sudo service openvpn@client start
 ```
 
-### Some note
+### Some change made in the code, no action needed below:
 
 partial routing (if do not want redirect all traffic to the vpn server. If you have a machine that host public app e.g. website server, you will need this setting.)
 
@@ -45,7 +60,7 @@ add
   
 ```
 route-nopull
-route 10.8.0.0 255.255.255.0
+route 10.10.0.0 255.255.255.0
 ```
 
 make a file 
@@ -54,7 +69,7 @@ make a file
   
   ```
   route-nopull
-  route 10.8.0.0 255.255.255.0
+  route 10.10.0.0 255.255.255.0
   ```
   
   another file
@@ -80,6 +95,4 @@ client-config-dir /etc/openvpn/ccd
 client-to-client
 ```
   
-Then go to /etc/openvpn/ccd to create file named as user name and put something like (in this example, the ip is set to 10.8.0.101 for the user)
-  
-`ifconfig-push 10.8.0.101 255.255.255.0`
+T
