@@ -50,10 +50,16 @@ This version of Ubuntu is too old and unsupported."
 	exit
 fi
 
-if [[ "$os" == "debian" && "$os_version" -lt 9 ]]; then
-	echo "Debian 9 or higher is required to use this installer.
+if [[ "$os" == "debian" ]]; then
+	if grep -q '/sid' /etc/debian_version; then
+		echo "Debian Testing and Debian Unstable are unsupported by this installer."
+		exit
+	fi
+	if [[ "$os_version" -lt 9 ]]; then
+		echo "Debian 9 or higher is required to use this installer.
 This version of Debian is too old and unsupported."
-	exit
+		exit
+	fi
 fi
 
 if [[ "$os" == "centos" && "$os_version" -lt 7 ]]; then
