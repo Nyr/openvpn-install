@@ -1,3 +1,7 @@
+### Important Note 
+--JWSmythe 20231104 
+This fork is to add support for Slackware Linux.  It was easier to patch it, than to recreate it 
+
 **New: [wireguard-install](https://github.com/Nyr/wireguard-install) is also available.**
 
 ## openvpn-install
