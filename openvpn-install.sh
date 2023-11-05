@@ -3,7 +3,7 @@
 # https://github.com/Nyr/openvpn-install
 #
 # Copyright (c) 2013 Nyr. Released under the MIT License.
-
+# Slackware support added by JWSmythe v20231028.2034
 
 # Detect Debian users running the script with "sh" instead of bash
 if readlink /proc/$$/exe | grep -q "dash"; then
@@ -13,7 +13,7 @@ fi
 
 # Discard stdin. Needed when running from an one-liner which includes a newline
 read -N 999999 -t 0.001
-
+ 
 # Detect OpenVZ 6
 if [[ $(uname -r | cut -d "." -f 1) -eq 2 ]]; then
 	echo "The system is running an old kernel, which is incompatible with this installer."
@@ -38,9 +38,13 @@ elif [[ -e /etc/fedora-release ]]; then
 	os="fedora"
 	os_version=$(grep -oE '[0-9]+' /etc/fedora-release | head -1)
 	group_name="nobody"
+elif grep -qs "slackware" /etc/os-release; then
+	os="slackware"
+	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
+	group_name="nobody"
 else
 	echo "This installer seems to be running on an unsupported distribution.
-Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora."
+Supported distros are Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS, Fedora, and Slackware."
 	exit
 fi
 
@@ -68,6 +72,12 @@ This version of CentOS is too old and unsupported."
 	exit
 fi
 
+if [[ "$os" == "slackware" && "$os_version" -lt 14 ]]; then
+	echo "Slackware 14.0 or higher is required to use this installer.
+This version of Slackware is too old and unsupported."
+	exit
+fi
+
 # Detect environments where $PATH does not include the sbin directories
 if ! grep -q sbin <<< "$PATH"; then
 	echo '$PATH does not include sbin. Try using "su -" instead of "su".'
@@ -84,6 +94,13 @@ if [[ ! -e /dev/net/tun ]] || ! ( exec 7<>/dev/net/tun ) 2>/dev/null; then
 TUN needs to be enabled before running this installer."
 	exit
 fi
+
+# Slackware's OpenVPN install doesn't include the server directory.  Create it.
+if [[ "$os" == "slackware" ]]; then
+   if [ ! -d /etc/openvpn/server ]; then
+      mkdir /etc/openvpn/server
+   fi
+fi    
 
 new_client () {
 	# Generates the custom client.ovpn
@@ -130,7 +147,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		[[ -z "$ip_number" ]] && ip_number="1"
 		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
 	fi
-	# If $ip is a private IP address, the server must be behind NAT
+	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
@@ -208,18 +225,25 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	[[ -z "$client" ]] && client="client"
 	echo
 	echo "OpenVPN installation is ready to begin."
-	# Install a firewall if firewalld or iptables are not already available
-	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
-		if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
-			firewall="firewalld"
-			# We don't want to silently enable firewalld, so we give a subtle warning
-			# If the user continues, firewalld will be installed and enabled during setup
-			echo "firewalld, which is required to manage routing tables, will also be installed."
-		elif [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
-			# iptables is way less invasive than firewalld so no warning is given
-			firewall="iptables"
-		fi
-	fi
+
+   if [[ "$os" == "slackware" ]]; then 
+      # No systemctl for Slackware. Can't use the test.
+      firewall="iptables"
+   else
+      # Install a firewall if firewalld or iptables are not already available
+      if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
+         if [[ "$os" == "centos" || "$os" == "fedora" ]]; then
+            firewall="firewalld"
+            # We don't want to silently enable firewalld, so we give a subtle warning
+            # If the user continues, firewalld will be installed and enabled during setup
+            echo "firewalld, which is required to manage routing tables, will also be installed."
+         elif [[ "$os" == "debian" || "$os" == "ubuntu" || "$os" == "slackware" ]]; then
+            # iptables is way less invasive than firewalld so no warning is given
+            firewall="iptables"
+         fi
+      fi
+   fi
+
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
@@ -227,12 +251,14 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		echo "[Service]
 LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
 	fi
-	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
+	if [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
 		apt-get update
 		apt-get install -y --no-install-recommends openvpn openssl ca-certificates $firewall
-	elif [[ "$os" = "centos" ]]; then
+	elif [[ "$os" == "centos" ]]; then
 		yum install -y epel-release
 		yum install -y openvpn openssl ca-certificates tar $firewall
+	elif [[ "$os" == "slackware" ]]; then
+		slackpkg install openvpn openssl ca-certificates tar $firewall
 	else
 		# Else, OS must be Fedora
 		dnf install -y openvpn openssl ca-certificates tar $firewall
@@ -271,16 +297,21 @@ YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
 ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
 	# Generate server.conf
+   # Note -JWS 20231027 server.conf should always have full paths to the 
+   # config files.  Relative paths failed with Slackware's rc.openvpn, if it 
+   # is called from outside of the /etc/openvpn/server directory.  This should
+   # help users on other distros too.
+   
 	echo "local $ip
 port $port
 proto $protocol
 dev tun
-ca ca.crt
-cert server.crt
-key server.key
-dh dh.pem
+ca /etc/openvpn/server/ca.crt
+cert /etc/openvpn/server/server.crt
+key /etc/openvpn/server/server.key
+dh /etc/openvpn/server/dh.pem
 auth SHA512
-tls-crypt tc.key
+tls-crypt /etc/openvpn/server/tc.key
 topology subnet
 server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 	# IPv6
@@ -334,12 +365,18 @@ group $group_name
 persist-key
 persist-tun
 verb 3
-crl-verify crl.pem" >> /etc/openvpn/server/server.conf
+crl-verify /etc/openvpn/server/crl.pem" >> /etc/openvpn/server/server.conf
 	if [[ "$protocol" = "udp" ]]; then
 		echo "explicit-exit-notify" >> /etc/openvpn/server/server.conf
 	fi
 	# Enable net.ipv4.ip_forward for the system
 	echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/99-openvpn-forward.conf
+   if [[ "$os" == "slackware" ]]; then
+      echo "Enabling /etc/rc.d/rc.ip_forward.
+      "
+      chmod 755 /etc/rc.d/rc.ip_forward
+      /etc/rc.d/rc.ip_forward start
+   fi
 	# Enable without waiting for a reboot or service restart
 	echo 1 > /proc/sys/net/ipv4/ip_forward
 	if [[ -n "$ip6" ]]; then
@@ -348,7 +385,14 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 		# Enable without waiting for a reboot or service restart
 		echo 1 > /proc/sys/net/ipv6/conf/all/forwarding
 	fi
-	if systemctl is-active --quiet firewalld.service; then
+   if [[ "$os" == "slackware" ]]; then
+      echo "     
+      *** Slackware Admins:  Disregard systemctl, systemd, and firewall-cmd errors below. ***
+      "
+   fi 
+
+   if systemctl is-active --quiet firewalld.service; then
+   #   if systemctl is-active --quiet firewalld.service && [[ "$os" != "slackware" ]]; then
 		# Using both permanent and not permanent rules to avoid a firewalld
 		# reload.
 		# We don't use --add-service=openvpn because that would only work with
@@ -401,6 +445,83 @@ ExecStop=$ip6tables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCE
 WantedBy=multi-user.target" >> /etc/systemd/system/openvpn-iptables.service
 		systemctl enable --now openvpn-iptables.service
 	fi
+   if [[ "$os" == "slackware" ]]; then
+      out="#!/bin/sh
+# Start/stop/restart the OpenVPN Routing
+# 20231025 JWSmythe (https://jwsmythe.com) for https://github.com/Nyr/openvpn-install
+# Copyright (c) 2013 Nyr. Released under the MIT License.
+
+routing_start() {
+   $iptables_path -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+   $iptables_path -I INPUT -p $protocol --dport $port -j ACCEPT
+   $iptables_path -I FORWARD -s 10.8.0.0/24 -j ACCEPT
+   $iptables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+"
+   if [[ -n "$ip6" ]]; then
+      out+=" 
+   $ip6tables_path -t nat -A POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
+   $ip6tables_path -I FORWARD -s fddd:1194:1194:1194::/64 -j ACCEPT
+   $ip6tables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+"
+   fi 
+
+out+="}
+
+routing_stop() {
+   $iptables_path -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+   $iptables_path -D INPUT -p $protocol --dport $port -j ACCEPT
+   $iptables_path -D FORWARD -s 10.8.0.0/24 -j ACCEPT
+   $iptables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+   $iptables_path -F 
+   $iptables_path -t nat -F   
+"
+
+   if [[ -n "$ip6" ]]; then
+      out+="    
+   $ip6tables_path -t nat -D POSTROUTING -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to $ip6
+   $ip6tables_path -D FORWARD -s fddd:1194:1194:1194::/64 -j ACCEPT
+   $ip6tables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+   $ip6tables_path -F
+   $ip6tables_path -t nat -F
+   "
+   fi 
+   
+   out+="}
+
+routing_restart() {
+   routing_stop
+   sleep 1
+   routing_start
+}
+
+case \"\$1\" in
+'start')
+   routing_start
+   ;;
+'stop')
+   routing_stop
+   ;;
+'restart')
+   routing_restart
+   ;;
+*)
+   echo \"usage $0 start|stop|restart\"
+esac
+"
+      if [[ ! -f /etc/rc.d/rc.ovpn_routing ]]; then
+         echo "Writing startup routing to /etc/rc.d/rc.ovpn_routing"
+         echo "$out" > /etc/rc.d/rc.ovpn_routing
+         chmod 755 /etc/rc.d/rc.ovpn_routing
+         /etc/rc.d/rc.ovpn_routing
+      else
+         echo "!!! Writing startup routing to /etc/rc.d/rc.ovpn_routing.new !!!"
+         echo "    You need to copy it over and run it."
+         echo "$out" > /etc/rc.d/rc.ovpn_routing.new
+      fi
+
+
+   fi    
+
 	# If SELinux is enabled and a custom port was selected, we need this
 	if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
 		# Install semanage if not already present
@@ -431,7 +552,17 @@ auth SHA512
 ignore-unknown-option block-outside-dns
 verb 3" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
-	systemctl enable --now openvpn-server@server.service
+   if [[ "$os" == "slackware" ]]; then
+      echo "iii Starting up services. rc.openvpn and rc.ovpn_routing "
+      echo "!!! You need to add them to rc.local, so they will run at boot time !!!"
+      # Make sure they're executable 
+      chmod 755 /etc/rc.d/rc.openvpn
+      chmod 755 /etc/rc.d/rc.ovpn_routing
+      /etc/rc.d/rc.openvpn start /etc/openvpn/server/server.conf
+      /etc/rc.d/rc.ovpn_routing start
+   else
+	   systemctl enable --now openvpn-server@server.service
+   fi
 	# Generates the custom client.ovpn
 	new_client
 	echo
@@ -439,6 +570,33 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	echo
 	echo "The client configuration is available in:" ~/"$client.ovpn"
 	echo "New clients can be added by running this script again."
+
+      if [[ "$os" == "slackware" ]]; then
+      echo "
+      ************************************************************
+      !!!!! Slackware Admins !!!!! 
+      ************************************************************
+      If this isn't the first time you've run this script, you may need to 
+      overwrite rc.ovpn_routing with rc.ovpn_routing.new.  It was left in case 
+      you made customizations.
+
+      You need to add these lines to the end of your /etc/rc.d/rc.local, 
+      so OpenVPN will start, and it will route the VPN clients correctly.
+
+      #==== Begin /etc/rc.d/rc.local lines =======================
+      # Start OpenVPN Server
+      if [ -x /etc/rc.d/rc.openvpn ]; then
+         . /etc/rc.d/rc.openvpn start /etc/openvpn/server/server.conf
+      fi
+
+      # Start OpenVPN Routing
+      if [ -x /etc/rc.d/rc.ovpn_routing ]; then
+         . /etc/rc.d/rc.ovpn_routing start
+      fi
+      #===== END /etc/rc.d/rc.local lines ========================
+      ************************************************************
+   "
+      fi
 else
 	clear
 	echo "OpenVPN is already installed."
@@ -522,40 +680,53 @@ else
 			if [[ "$remove" =~ ^[yY]$ ]]; then
 				port=$(grep '^port ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
 				protocol=$(grep '^proto ' /etc/openvpn/server/server.conf | cut -d " " -f 2)
-				if systemctl is-active --quiet firewalld.service; then
-					ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
-					# Using both permanent and not permanent rules to avoid a firewalld reload.
-					firewall-cmd --remove-port="$port"/"$protocol"
-					firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
-					firewall-cmd --permanent --remove-port="$port"/"$protocol"
-					firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
-					firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
-					firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
-					if grep -qs "server-ipv6" /etc/openvpn/server/server.conf; then
-						ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING | grep '\-s fddd:1194:1194:1194::/64 '"'"'!'"'"' -d fddd:1194:1194:1194::/64' | grep -oE '[^ ]+$')
-						firewall-cmd --zone=trusted --remove-source=fddd:1194:1194:1194::/64
-						firewall-cmd --permanent --zone=trusted --remove-source=fddd:1194:1194:1194::/64
-						firewall-cmd --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
-						firewall-cmd --permanent --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
-					fi
-				else
-					systemctl disable --now openvpn-iptables.service
-					rm -f /etc/systemd/system/openvpn-iptables.service
-				fi
-				if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
-					semanage port -d -t openvpn_port_t -p "$protocol" "$port"
-				fi
-				systemctl disable --now openvpn-server@server.service
-				rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
-				rm -f /etc/sysctl.d/99-openvpn-forward.conf
-				if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
-					rm -rf /etc/openvpn/server
-					apt-get remove --purge -y openvpn
-				else
-					# Else, OS must be CentOS or Fedora
-					yum remove -y openvpn
-					rm -rf /etc/openvpn/server
-				fi
+            if [[ "$os" == "slackware" ]]; then
+               # Re-enabling so the stops will work.  Disabling immediately after.
+               chmod 755 /etc/rc.d/rc.openvpn 
+               chmod 755 /etc/rc.d/rc.ovpn_routing
+               /etc/rc.d/rc.ovpn_routing stop
+               /etc/rc.d/rc.openvpn stop
+               rm -rf /etc/openvpn/server
+               chmod 644 /etc/rc.d/rc.openvpn 
+               chmod 644 /etc/rc.d/rc.ovpn_routing
+               # We're not uninstalling anything.  The user can if they want.
+               # slackpkg remove openvpn 
+            else
+               if systemctl is-active --quiet firewalld.service; then
+                  ip=$(firewall-cmd --direct --get-rules ipv4 nat POSTROUTING | grep '\-s 10.8.0.0/24 '"'"'!'"'"' -d 10.8.0.0/24' | grep -oE '[^ ]+$')
+                  # Using both permanent and not permanent rules to avoid a firewalld reload.
+                  firewall-cmd --remove-port="$port"/"$protocol"
+                  firewall-cmd --zone=trusted --remove-source=10.8.0.0/24
+                  firewall-cmd --permanent --remove-port="$port"/"$protocol"
+                  firewall-cmd --permanent --zone=trusted --remove-source=10.8.0.0/24
+                  firewall-cmd --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
+                  firewall-cmd --permanent --direct --remove-rule ipv4 nat POSTROUTING 0 -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to "$ip"
+                  if grep -qs "server-ipv6" /etc/openvpn/server/server.conf; then
+                     ip6=$(firewall-cmd --direct --get-rules ipv6 nat POSTROUTING | grep '\-s fddd:1194:1194:1194::/64 '"'"'!'"'"' -d fddd:1194:1194:1194::/64' | grep -oE '[^ ]+$')
+                     firewall-cmd --zone=trusted --remove-source=fddd:1194:1194:1194::/64
+                     firewall-cmd --permanent --zone=trusted --remove-source=fddd:1194:1194:1194::/64
+                     firewall-cmd --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
+                     firewall-cmd --permanent --direct --remove-rule ipv6 nat POSTROUTING 0 -s fddd:1194:1194:1194::/64 ! -d fddd:1194:1194:1194::/64 -j SNAT --to "$ip6"
+                  fi
+               else
+                  systemctl disable --now openvpn-iptables.service
+                  rm -f /etc/systemd/system/openvpn-iptables.service
+               fi
+               if sestatus 2>/dev/null | grep "Current mode" | grep -q "enforcing" && [[ "$port" != 1194 ]]; then
+                  semanage port -d -t openvpn_port_t -p "$protocol" "$port"
+               fi
+               systemctl disable --now openvpn-server@server.service
+               rm -f /etc/systemd/system/openvpn-server@server.service.d/disable-limitnproc.conf
+               rm -f /etc/sysctl.d/99-openvpn-forward.conf
+               if [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
+                  rm -rf /etc/openvpn/server
+                  apt-get remove --purge -y openvpn
+               else
+                  # Else, OS must be CentOS or Fedora
+                  yum remove -y openvpn
+                  rm -rf /etc/openvpn/server
+               fi
+            fi
 				echo
 				echo "OpenVPN removed!"
 			else
