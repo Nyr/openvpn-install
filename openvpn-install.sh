@@ -57,8 +57,9 @@ This version of Debian is too old and unsupported."
 fi
 
 if [[ "$os" == "centos" && "$os_version" -lt 9 ]]; then
-	echo "CentOS 9 or higher is required to use this installer.
-This version of CentOS is too old and unsupported."
+	os_name=$(sed 's/ release.*//' /etc/almalinux-release /etc/rocky-release /etc/centos-release 2>/dev/null | head -1)
+	echo "$os_name 9 or higher is required to use this installer.
+This version of $os_name is too old and unsupported."
 	exit
 fi
 
