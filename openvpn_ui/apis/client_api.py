@@ -31,7 +31,7 @@ router = APIRouter()
         200: {"description": "OK"},
     },
     tags=["client"],
-    summary="List all clients",
+    summary="List all clients and download vpn file with specific name",
     response_model_by_alias=True,
 )
 async def get_client(
@@ -40,8 +40,8 @@ async def get_client(
     try:
         file_path = command.install_dir
         if client_name:
-            client_name = f"{client_name.strip('.ovpn')}.ovpn"
-            file_location = file_path + client_name
+            client_name = client_name.strip('.ovpn') + ".ovpn"
+            file_location = file_path + "/" + client_name
             return FileResponse(file_location, filename=client_name,
                                 media_type="application/octet-stream")
         else:

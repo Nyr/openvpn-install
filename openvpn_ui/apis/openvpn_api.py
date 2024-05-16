@@ -28,7 +28,7 @@ router = APIRouter()
         200: {"description": "OK"},
     },
     tags=["openvpn"],
-    summary="Get OpenVPN configuration",
+    summary="Get OpenVPN status",
     response_model_by_alias=True,
 )
 async def get_openvpn(

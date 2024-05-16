@@ -8,8 +8,7 @@ from typing import Union
 class VpnCommand:
     @cached_property
     def install_dir(self) -> str:
-        return os.path.dirname(__file__).replace("openvpn-ui/http_server/vpn", "").replace(
-            r"openvpn-ui\\http_server\\vpn", "")
+        return os.path.dirname(__file__).rstrip("/vpn")
 
     @cached_property
     def install_file(self) -> str:
@@ -21,14 +20,17 @@ class VpnCommand:
         return f"Please install OpenVPN: {self.install_file}"
 
     def install_vpn(self) -> str:
-        return self.create_client("default")
+        return self.create_client("init")
 
     def create_client(self, name) -> str:
         result = self.install_cmd(name, "1")
         if isinstance(result, str):
             return result
         if result:
-            new_client = f"~/{name.strip('.ovpn')}.ovpn"
+            if not name.startswith('/'):
+                new_client = f"/root/{name.strip('.ovpn')}.ovpn"
+            else:
+                new_client = name
             # move vpn file
             if os.path.exists(new_client):
                 shutil.copy(new_client, self.install_dir)
@@ -49,7 +51,8 @@ class VpnCommand:
 
     def install_cmd(self, name: str, option: str,
                     file_path="/etc/openvpn/server/server.conf") -> Union[bool, str]:
-        if self.get_vpn_status(file_path) != "OpenVPN has been installed":
+        if (self.get_vpn_status(file_path) != "OpenVPN has been installed"
+                and name != "init"):
             return "Please install OpenVPN"
 
         name = name.strip('.ovpn')
@@ -76,4 +79,6 @@ class VpnCommand:
         # 输出脚本执行结果和状态
         print("shell output: ", new_client, stdout_data, stderr_data,
               process.returncode, process.stderr)
+        if self.get_vpn_status(file_path) != "OpenVPN has been installed":
+            return stdout_data
         return True
