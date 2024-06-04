@@ -20,6 +20,10 @@ if grep -qs "ubuntu" /etc/os-release; then
 	os="ubuntu"
 	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
 	group_name="nogroup"
+elif grep -qs "archlinux" /etc/os-release; then
+	os="archlinux"
+	os_version=$(grep 'VERSION_ID' /etc/os-release | cut -d '"' -f 2 | tr -d '.')
+	group_name="nobody"
 elif [[ -e /etc/debian_version ]]; then
 	os="debian"
 	os_version=$(grep -oE '[0-9]+' /etc/debian_version | head -1)
@@ -210,7 +214,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			# We don't want to silently enable firewalld, so we give a subtle warning
 			# If the user continues, firewalld will be installed and enabled during setup
 			echo "firewalld, which is required to manage routing tables, will also be installed."
-		elif [[ "$os" == "debian" || "$os" == "ubuntu" ]]; then
+		elif [[ "$os" == "debian" || "$os" == "ubuntu" || "$os" == "archlinux" ]]; then
 			# iptables is way less invasive than firewalld so no warning is given
 			firewall="iptables"
 		fi
@@ -225,6 +229,9 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 	if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
 		apt-get update
 		apt-get install -y --no-install-recommends openvpn openssl ca-certificates $firewall
+  	elif [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
+   		pacman -Syyyu
+     		pacman -S openvpn openssl ca-certificates $firewall
 	elif [[ "$os" = "centos" ]]; then
 		dnf install -y epel-release
 		dnf install -y openvpn openssl ca-certificates tar $firewall
