@@ -196,6 +196,18 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
+  if [[ "$dns" == 7 ]]; then
+    read -p "Enter custom DNS server 1: " dns_custom_1
+    until [[ -z "$dns_custom_1" || "$dns_custom_1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+      echo "$dns_custom_1: invalid DNS server."
+      read -p "Enter custom DNS server 1: " dns_custom_1
+    done
+    read -p "Enter custom DNS server 2: " dns_custom_2
+    until [[ -z "$dns_custom_2" || "$dns_custom_2" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+      echo "$dns_custom_2: invalid DNS server."
+      read -p "Enter custom DNS server 2: " dns_custom_2
+    done
+  fi  
 	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
