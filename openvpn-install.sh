@@ -110,18 +110,18 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	clear
 	echo 'Welcome to this OpenVPN road warrior installer!'
 	# Ask the user what IPv4 to use OR to use 0.0.0.0 to listen on all interfaces
-    number_of_real_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
-    number_of_ip=$((number_of_real_ip+1))
-    echo
-    echo "Which IPv4 address should be used?"
-    (ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
-    read -p "IPv4 address [1]: " ip_number
-    until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$number_of_ip" ]]; do
-        echo "$ip_number: invalid selection."
-        read -p "IPv4 address [1]: " ip_number
-    done
-    [[ -z "$ip_number" ]] && ip_number="1"
-    ip=$((ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
+	number_of_real_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
+	number_of_ip=$((number_of_real_ip+1))
+	echo
+	echo "Which IPv4 address should be used?"
+	(ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
+	read -p "IPv4 address [1]: " ip_number
+	until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$number_of_ip" ]]; do
+		echo "$ip_number: invalid selection."
+		read -p "IPv4 address [1]: " ip_number
+	done
+	[[ -z "$ip_number" ]] && ip_number="1"
+	ip=$((ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
 	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168|0\.0\.0\.0)'; then
 		echo
@@ -136,8 +136,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		done
 		[[ -z "$public_ip" ]] && public_ip="$get_public_ip"
 	fi
-    # Seting the default gateway's interface for public side of the NAT since it was used to get_public_ip
-    out_interface=$(ip r | grep -E '^default' | awk '{print $5}')
+	# Seting the default gateway's interface for public side of the NAT since it was used to get_public_ip
+	out_interface=$(ip r | grep -E '^default' | awk '{print $5}')
 	# If system has a single IPv6, it is selected automatically
 	if [[ $(ip -6 addr | grep -c 'inet6 [23]') -eq 1 ]]; then
 		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 | grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}')
