@@ -234,7 +234,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			firewall="iptables"
 		fi
 	fi
-    # Reviewing installation parameters
+	# Reviewing installation parameters
 	echo "   OpenVPN will bind at $ip on port $port/$protocol"
 	echo "   The public IPv4 (hostname) is $get_public_ip ($public_ip)"
 	if [[ -n $ip6 ]]; then
@@ -242,7 +242,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	fi
 	echo "   Traffic will be routed via interface $out_interface"
 	echo "   Names will be resolved by $resolver"
-    echo ''
+	echo ''
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
