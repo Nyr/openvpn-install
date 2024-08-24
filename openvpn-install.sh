@@ -237,7 +237,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
     # Reviewing installation parameters
 	echo "   OpenVPN will bind at $ip on port $port/$protocol"
 	echo "   The public IPv4 (hostname) is $get_public_ip ($public_ip)"
-    if [[ -n $ip6 ]]; then
+	if [[ -n $ip6 ]]; then
 		echo "   The public IPv6 is $ip6"
 	fi
 	echo "   Traffic will be routed via interface $out_interface"
