@@ -18,5 +18,7 @@ You can get a VPS from just 2€/month at [AlphaVPS](https://alphavps.com/client
 ### Donations
 If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [cryptocurrency](https://pastebin.com/raw/M2JJpQpC). Thanks!
 
-### Sponsor
+### Sponsors
 This project is proudly sponsored by our friends at [FrogeHost](https://froge.host/?utm_source=nyr).
+
+For a commercial VPN with strong anti-censorship capabilities (最强翻墙VPN) from $1/month, check out [Clever VPN](https://www.clever-vpn.net/?wg-referral=01LOULuQoi).
