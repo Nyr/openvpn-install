@@ -96,7 +96,7 @@ new_client () {
 	echo "<tls-crypt>"
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
 	echo "</tls-crypt>"
-	} > ~/"$client".ovpn
+	} > /root/"$client".ovpn
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
@@ -454,7 +454,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	echo
 	echo "Finished!"
 	echo
-	echo "The client configuration is available in:" ~/"$client.ovpn"
+	echo "The client configuration is available in:" /root/"$client.ovpn"
 	echo "New clients can be added by running this script again."
 else
 	clear
@@ -482,11 +482,12 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
+   			rm pki/reqs/$client.req
 			./easyrsa --batch --days=3650 build-client-full "$client" nopass
 			# Generates the custom client.ovpn
 			new_client
 			echo
-			echo "$client added. Configuration available in:" ~/"$client.ovpn"
+			echo "$client added. Configuration available in:" /root/"$client.ovpn"
 			exit
 		;;
 		2)
