@@ -1,24 +1,65 @@
-**New: [wireguard-install](https://github.com/Nyr/wireguard-install) is also available.**
-
 ## openvpn-install
-OpenVPN [road warrior](http://en.wikipedia.org/wiki/Road_warrior_%28computing%29) installer for Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS and Fedora.
 
-This script will let you set up your own VPN server in no more than a minute, even if you haven't used OpenVPN before. It has been designed to be as unobtrusive and universal as possible.
+OpenVPN Server installer for Ubuntu, Debian, AlmaLinux, Rocky Linux, CentOS, and Fedora.
 
-### Installation
-Run the script and follow the assistant:
+This repo is originally a fork of https://github.com/Nyr/openvpn-install with some changes and added features.
 
-`wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh`
+### Instructions
+
+Download and execute the script:
+
+```
+wget https://raw.githubusercontent.com/davift/openvpn-install/master/openvpn-install.sh
+chmod +x openvpn-install.sh
+./openvpn-install.sh
+```
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
 
-### I want to run my own VPN but don't have a server for that
-You can get a VPS from just 2€/month at [AlphaVPS](https://alphavps.com/clients/aff.php?aff=474&pid=422).
+### Automation
 
-### Donations
-If you want to show your appreciation, you can donate via [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=VBAYDL34Z7J6L) or [cryptocurrency](https://pastebin.com/raw/M2JJpQpC). Thanks!
+Download the CLI script:
 
-### Sponsors
-This project is proudly sponsored by our friends at [FrogeHost](https://froge.host/?utm_source=nyr).
+```
+wget https://raw.githubusercontent.com/davift/openvpn-install/master/openvpn-cli.sh
+chmod +x openvpn-cli.sh
+./openvpn-cli.sh
+```
 
-For a commercial VPN with strong anti-censorship capabilities (最强翻墙VPN) from $1/month, check out [Clever VPN](https://www.clever-vpn.net/?wg-referral=01LOULuQoi).
+The CLI script allows you to add and revoke users with a single command or for using with Ansible or Terraform.
+
+```
+See examples:
+
+   ./openvpn-cli.sh add username                 add a new client
+   ./openvpn-cli.sh revoke username              revoke a client
+   ./openvpn-cli.sh add username@domain.com      add a new client and send the configuration via email
+   ./openvpn-cli.sh revoke username@domain.com   revoke client and send the configuration via email
+
+```
+
+### Optional
+
+If the new client account is a valid email address, the configuration file is automatically sent, as long as MSMTP is installed and configured.
+
+```
+sudo apt install msmtp msmtp-mta -y
+sudo nano /etc/msmtprc
+```
+
+MSMTP Configuration Example (for Gmail):
+
+```
+defaults
+auth on
+tls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile ~/.msmtp.log
+account gmail
+host smtp.gmail.com
+port 587
+from username@gmail.com
+user username@gmail.com
+password password
+account default : gmail
+```
