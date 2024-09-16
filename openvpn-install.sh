@@ -190,10 +190,23 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
 	read -p "DNS server [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
+	until [[ -z "$dns" || "$dns" =~ ^[1-7]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
+    	if [[ "$dns" == 7 ]]; then
+  	  read -p "Enter custom DNS server 1: " dns_custom_1
+  	  until [[ "$dns_custom_1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+  	    echo "$dns_custom_1: invalid DNS server."
+  	    read -p "Enter custom DNS server 1: " dns_custom_1
+  	  done
+  	  read -p "Enter custom DNS server 2: " dns_custom_2
+  	  until [[ "$dns_custom_2" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+  	    echo "$dns_custom_2: invalid DNS server."
+  	    read -p "Enter custom DNS server 2: " dns_custom_2
+  	  done
+  	fi 
+   
 	case "$dns" in
 		1|"")
 			resolver='the current system resolvers'
