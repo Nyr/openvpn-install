@@ -121,7 +121,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		read -p "IPv4 address [1]: " ip_number
 	done
 	[[ -z "$ip_number" ]] && ip_number="1"
-	ip=$((ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
+	ip=$((ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p | head -1)
 	# If $ip is a private IP address, the server must be behind NAT
 	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168|0\.0\.0\.0)'; then
 		echo
@@ -137,7 +137,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		[[ -z "$public_ip" ]] && public_ip="$get_public_ip"
 	fi
 	# Seting the default gateway's interface for public side of the NAT since it was used to get_public_ip
-	out_interface=$(ip r | grep -E '^default' | awk '{print $5}')
+	out_interface=$(ip r | grep -E '^default' | awk '{print $5}' | head -1)
 	# If system has a single IPv6, it is selected automatically
 	if [[ $(ip -6 addr | grep -c 'inet6 [23]') -eq 1 ]]; then
 		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 | grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}')
@@ -189,24 +189,13 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "   4) OpenDNS"
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
+	echo "   7) Other"
 	read -p "DNS server [1]: " dns
 	until [[ -z "$dns" || "$dns" =~ ^[1-7]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
-    	if [[ "$dns" == 7 ]]; then
-  	  read -p "Enter custom DNS server 1: " dns_custom_1
-  	  until [[ "$dns_custom_1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
-  	    echo "$dns_custom_1: invalid DNS server."
-  	    read -p "Enter custom DNS server 1: " dns_custom_1
-  	  done
-  	  read -p "Enter custom DNS server 2: " dns_custom_2
-  	  until [[ "$dns_custom_2" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
-  	    echo "$dns_custom_2: invalid DNS server."
-  	    read -p "Enter custom DNS server 2: " dns_custom_2
-  	  done
-  	fi 
-   
+
 	case "$dns" in
 		1|"")
 			resolver='the current system resolvers'
@@ -225,6 +214,21 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		;;
 		6)
 			resolver='AdGuard'
+		;;
+		7)
+		    if [[ "$dns" == 7 ]]; then
+		  	  read -p "Enter custom DNS server 1: " dns_custom_1
+		  	  until [[ "$dns_custom_1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+		  	    echo "$dns_custom_1: invalid DNS server."
+		  	    read -p "Enter custom DNS server 1: " dns_custom_1
+		  	  done
+		  	  read -p "Enter custom DNS server 2: " dns_custom_2
+		  	  until [[ "$dns_custom_2" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+		  	    echo "$dns_custom_2: invalid DNS server."
+		  	    read -p "Enter custom DNS server 2: " dns_custom_2
+		  	  done
+		  	fi
+			resolver='Other'
 		;;
 	esac
 	echo
@@ -361,6 +365,10 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 		6)
 			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
+		;;
+		7)
+			echo 'push "dhcp-option DNS '$dns_custom_1'"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS '$dns_custom_2'"' >> /etc/openvpn/server/server.conf
 		;;
 	esac
 	echo 'push "block-outside-dns"' >> /etc/openvpn/server/server.conf
