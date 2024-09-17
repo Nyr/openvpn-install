@@ -8,9 +8,14 @@ This script will let you set up your own VPN server in no more than a minute, ev
 ### Installation
 Run the script and follow the assistant:
 
-`wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh`
+```
+wget https://git.io/vpn -O openvpn-install.sh && bash openvpn-install.sh
+```
 
 Once it ends, you can run it again to add more users, remove some of them or even completely uninstall OpenVPN.
+
+### Automation
+Check out the script `openvpn-cli.sh` for user management with a single command line, easy to integrate into other scripts or with Ansible or Terraform.
 
 ### I want to run my own VPN but don't have a server for that
 You can get a VPS from just 2€/month at [AlphaVPS](https://alphavps.com/clients/aff.php?aff=474&pid=422).
