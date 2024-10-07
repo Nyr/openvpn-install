@@ -436,9 +436,10 @@ else
 	echo "   1) Add a new client"
 	echo "   2) Revoke an existing client"
 	echo "   3) Remove OpenVPN"
-	echo "   4) Exit"
+	echo "   4) Number Of Client"
+	echo "   5) Exit"
 	read -p "Option: " option
-	until [[ "$option" =~ ^[1-4]$ ]]; do
+	until [[ "$option" =~ ^[1-5]$ ]]; do
 		echo "$option: invalid selection."
 		read -p "Option: " option
 	done
@@ -553,7 +554,24 @@ else
 			fi
 			exit
 		;;
-		4)
+        4)
+			echo
+			echo "Enter number of client:"
+			read -p "Number: " unsanitized_client
+			client_count=$(sed 's/[^0123456789]/_/g' <<< "$unsanitized_client")
+            cd /etc/openvpn/server/easy-rsa/
+            current_time=$(date +"%Y%m%d%H%M%S_")
+            for ((i = 1; i <= client_count; i++)); do
+                next_client_number=$((last_client_number + i))
+                client="${current_time}${next_client_number}"
+                ./easyrsa --batch --days=3650 build-client-full "$client" nopass
+                new_client
+			echo
+			echo "$client added. Configuration available in:" ~/"$client.ovpn"
+            done
+			exit
+		;;
+		5)
 			exit
 		;;
 	esac
