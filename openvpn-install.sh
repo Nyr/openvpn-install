@@ -96,7 +96,7 @@ new_client () {
 	echo "<tls-crypt>"
 	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
 	echo "</tls-crypt>"
-	} > ~/"$client".ovpn
+	} > /root/"$client".ovpn
 }
 
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
@@ -109,24 +109,21 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	fi
 	clear
 	echo 'Welcome to this OpenVPN road warrior installer!'
-	# If system has a single IPv4, it is selected automatically. Else, ask the user
-	if [[ $(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}') -eq 1 ]]; then
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}')
-	else
-		number_of_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
-		echo
-		echo "Which IPv4 address should be used?"
-		ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
+	# Ask the user what IPv4 to use OR to use 0.0.0.0 to listen on all interfaces
+	number_of_real_ip=$(ip -4 addr | grep inet | grep -vEc '127(\.[0-9]{1,3}){3}')
+	number_of_ip=$((number_of_real_ip+1))
+	echo
+	echo "Which IPv4 address should be used?"
+	(ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | nl -s ') '
+	read -p "IPv4 address [1]: " ip_number
+	until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$number_of_ip" ]]; do
+		echo "$ip_number: invalid selection."
 		read -p "IPv4 address [1]: " ip_number
-		until [[ -z "$ip_number" || "$ip_number" =~ ^[0-9]+$ && "$ip_number" -le "$number_of_ip" ]]; do
-			echo "$ip_number: invalid selection."
-			read -p "IPv4 address [1]: " ip_number
-		done
-		[[ -z "$ip_number" ]] && ip_number="1"
-		ip=$(ip -4 addr | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p)
-	fi
+	done
+	[[ -z "$ip_number" ]] && ip_number="1"
+	ip=$((ip -4 addr ; echo -n 'inet 0.0.0.0') | grep inet | grep -vE '127(\.[0-9]{1,3}){3}' | cut -d '/' -f 1 | grep -oE '[0-9]{1,3}(\.[0-9]{1,3}){3}' | sed -n "$ip_number"p | head -1)
 	# If $ip is a private IP address, the server must be behind NAT
-	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168)'; then
+	if echo "$ip" | grep -qE '^(10\.|172\.1[6789]\.|172\.2[0-9]\.|172\.3[01]\.|192\.168|0\.0\.0\.0)'; then
 		echo
 		echo "This server is behind NAT. What is the public IPv4 address or hostname?"
 		# Get public IP and sanitize with grep
@@ -139,6 +136,8 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		done
 		[[ -z "$public_ip" ]] && public_ip="$get_public_ip"
 	fi
+	# Seting the default gateway's interface for public side of the NAT since it was used to get_public_ip
+	out_interface=$(ip r | grep -E '^default' | awk '{print $5}' | head -1)
 	# If system has a single IPv6, it is selected automatically
 	if [[ $(ip -6 addr | grep -c 'inet6 [23]') -eq 1 ]]; then
 		ip6=$(ip -6 addr | grep 'inet6 [23]' | cut -d '/' -f 1 | grep -oE '([0-9a-fA-F]{0,4}:){1,7}[0-9a-fA-F]{0,4}')
@@ -186,15 +185,52 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	echo "Select a DNS server for the clients:"
 	echo "   1) Current system resolvers"
 	echo "   2) Google"
-	echo "   3) 1.1.1.1"
+	echo "   3) CloudFlare"
 	echo "   4) OpenDNS"
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
+	echo "   7) Other"
 	read -p "DNS server [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
+	until [[ -z "$dns" || "$dns" =~ ^[1-7]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
+
+	case "$dns" in
+		1|"")
+			resolver='the current system resolvers'
+		;;
+		2)
+			resolver='Google'
+		;;
+		3)
+			resolver='CloudFlare'
+		;;
+		4)
+			resolver='OpenDNS'
+		;;
+		5)
+			resolver='Quad9'
+		;;
+		6)
+			resolver='AdGuard'
+		;;
+		7)
+		    if [[ "$dns" == 7 ]]; then
+		  	  read -p "Enter custom DNS server 1: " dns_custom_1
+		  	  until [[ "$dns_custom_1" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+		  	    echo "$dns_custom_1: invalid DNS server."
+		  	    read -p "Enter custom DNS server 1: " dns_custom_1
+		  	  done
+		  	  read -p "Enter custom DNS server 2: " dns_custom_2
+		  	  until [[ "$dns_custom_2" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; do
+		  	    echo "$dns_custom_2: invalid DNS server."
+		  	    read -p "Enter custom DNS server 2: " dns_custom_2
+		  	  done
+		  	fi
+			resolver='Other'
+		;;
+	esac
 	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
@@ -215,6 +251,15 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			firewall="iptables"
 		fi
 	fi
+	# Reviewing installation parameters
+	echo "   OpenVPN will bind at $ip on port $port/$protocol"
+	echo "   The public IPv4 (hostname) is $get_public_ip ($public_ip)"
+	if [[ -n $ip6 ]]; then
+		echo "   The public IPv6 is $ip6"
+	fi
+	echo "   Traffic will be routed via interface $out_interface"
+	echo "   Names will be resolved by $resolver"
+	echo ''
 	read -n1 -r -p "Press any key to continue..."
 	# If running inside a container, disable LimitNPROC to prevent conflicts
 	if systemd-detect-virt -cq; then
@@ -321,6 +366,10 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
 		;;
+		7)
+			echo 'push "dhcp-option DNS '$dns_custom_1'"' >> /etc/openvpn/server/server.conf
+			echo 'push "dhcp-option DNS '$dns_custom_2'"' >> /etc/openvpn/server/server.conf
+		;;
 	esac
 	echo 'push "block-outside-dns"' >> /etc/openvpn/server/server.conf
 	echo "keepalive 10 120
@@ -375,11 +424,11 @@ crl-verify crl.pem" >> /etc/openvpn/server/server.conf
 Before=network.target
 [Service]
 Type=oneshot
-ExecStart=$iptables_path -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+ExecStart=$iptables_path -t nat -A POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -o $out_interface -j MASQUERADE
 ExecStart=$iptables_path -I INPUT -p $protocol --dport $port -j ACCEPT
 ExecStart=$iptables_path -I FORWARD -s 10.8.0.0/24 -j ACCEPT
 ExecStart=$iptables_path -I FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
-ExecStop=$iptables_path -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -j SNAT --to $ip
+ExecStop=$iptables_path -t nat -D POSTROUTING -s 10.8.0.0/24 ! -d 10.8.0.0/24 -o $out_interface -j MASQUERADE
 ExecStop=$iptables_path -D INPUT -p $protocol --dport $port -j ACCEPT
 ExecStop=$iptables_path -D FORWARD -s 10.8.0.0/24 -j ACCEPT
 ExecStop=$iptables_path -D FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT" > /etc/systemd/system/openvpn-iptables.service
@@ -426,7 +475,7 @@ verb 3" > /etc/openvpn/server/client-common.txt
 	echo
 	echo "Finished!"
 	echo
-	echo "The client configuration is available in:" ~/"$client.ovpn"
+	echo "The client configuration is available in:" /root/"$client.ovpn"
 	echo "New clients can be added by running this script again."
 else
 	clear
@@ -454,11 +503,12 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
+   			rm pki/reqs/$client.req
 			./easyrsa --batch --days=3650 build-client-full "$client" nopass
 			# Generates the custom client.ovpn
 			new_client
 			echo
-			echo "$client added. Configuration available in:" ~/"$client.ovpn"
+			echo "$client added. Configuration available in:" /root/"$client.ovpn"
 			exit
 		;;
 		2)
