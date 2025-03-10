@@ -184,17 +184,41 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	[[ -z "$port" ]] && port="1194"
 	echo
 	echo "Select a DNS server for the clients:"
-	echo "   1) Current system resolvers"
+	echo "   1) Default system resolvers"
 	echo "   2) Google"
 	echo "   3) 1.1.1.1"
 	echo "   4) OpenDNS"
 	echo "   5) Quad9"
 	echo "   6) AdGuard"
+	echo "   7) Specify custom resolvers"
 	read -p "DNS server [1]: " dns
-	until [[ -z "$dns" || "$dns" =~ ^[1-6]$ ]]; do
+	until [[ -z "$dns" || "$dns" =~ ^[1-7]$ ]]; do
 		echo "$dns: invalid selection."
 		read -p "DNS server [1]: " dns
 	done
+	# If the user selected custom resolvers, we deal with that here
+	if [[ "$dns" = "7" ]]; then
+		echo
+		until [[ -n "$custom_dns" ]]; do
+			echo "Enter DNS servers (one or more IPv4 addresses, separated by commas or spaces):"
+			read -p "DNS servers: " dns_input
+			# Convert comma delimited to space delimited
+			dns_input=$(echo "$dns_input" | tr ',' ' ')
+			# Validate and build custom DNS IP list
+			for dns_ip in $dns_input; do
+				if [[ "$dns_ip" =~ ^[0-9]{1,3}(\.[0-9]{1,3}){3}$ ]]; then
+					if [[ -z "$custom_dns" ]]; then
+						custom_dns="$dns_ip"
+					else
+						custom_dns="$custom_dns $dns_ip"
+					fi
+				fi
+			done
+			if [ -z "$custom_dns" ]; then
+				echo "Invalid input."
+			fi
+		done
+	fi
 	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
@@ -320,6 +344,11 @@ server 10.8.0.0 255.255.255.0" > /etc/openvpn/server/server.conf
 		6)
 			echo 'push "dhcp-option DNS 94.140.14.14"' >> /etc/openvpn/server/server.conf
 			echo 'push "dhcp-option DNS 94.140.15.15"' >> /etc/openvpn/server/server.conf
+		;;
+		7)
+		for dns_ip in $custom_dns; do
+			echo "push \"dhcp-option DNS $dns_ip\"" >> /etc/openvpn/server/server.conf
+		done
 		;;
 	esac
 	echo 'push "block-outside-dns"' >> /etc/openvpn/server/server.conf
