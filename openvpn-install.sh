@@ -11,7 +11,7 @@ if readlink /proc/$$/exe | grep -q "dash"; then
 	exit
 fi
 
-# Discard stdin. Needed when running from an one-liner which includes a newline
+# Discard stdin. Needed when running from a one-liner which includes a newline
 read -N 999999 -t 0.001
 
 # Detect OS
@@ -175,7 +175,7 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 		;;
 	esac
 	echo
-	echo "What port should OpenVPN listen to?"
+	echo "What port should OpenVPN listen on?"
 	read -p "Port [1194]: " port
 	until [[ -z "$port" || "$port" =~ ^[0-9]+$ && "$port" -le 65535 ]]; do
 		echo "$port: invalid port."
