@@ -83,25 +83,6 @@ fi
 # Store the absolute path of the directory where the script is located
 script_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-new_client () {
-	# Generates the custom client.ovpn
-	{
-	cat /etc/openvpn/server/client-common.txt
-	echo "<ca>"
-	cat /etc/openvpn/server/easy-rsa/pki/ca.crt
-	echo "</ca>"
-	echo "<cert>"
-	sed -ne '/BEGIN CERTIFICATE/,$ p' /etc/openvpn/server/easy-rsa/pki/issued/"$client".crt
-	echo "</cert>"
-	echo "<key>"
-	cat /etc/openvpn/server/easy-rsa/pki/private/"$client".key
-	echo "</key>"
-	echo "<tls-crypt>"
-	sed -ne '/BEGIN OpenVPN Static key/,$ p' /etc/openvpn/server/tc.key
-	echo "</tls-crypt>"
-	} > "$script_dir"/"$client".ovpn
-}
-
 if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	# Detect some Debian minimal setups where neither wget nor curl are installed
 	if ! hash wget 2>/dev/null && ! hash curl 2>/dev/null; then
@@ -264,25 +245,15 @@ LimitNPROC=infinity" > /etc/systemd/system/openvpn-server@server.service.d/disab
 		systemctl enable --now firewalld.service
 	fi
 	# Get easy-rsa
-	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.2.2/EasyRSA-3.2.2.tgz'
+	easy_rsa_url='https://github.com/OpenVPN/easy-rsa/releases/download/v3.2.3/EasyRSA-3.2.3.tgz'
 	mkdir -p /etc/openvpn/server/easy-rsa/
 	{ wget -qO- "$easy_rsa_url" 2>/dev/null || curl -sL "$easy_rsa_url" ; } | tar xz -C /etc/openvpn/server/easy-rsa/ --strip-components 1
 	chown -R root:root /etc/openvpn/server/easy-rsa/
 	cd /etc/openvpn/server/easy-rsa/
-	# Create the PKI, set up the CA and the server and client certificates
+	# Create the PKI, set up the CA and create TLS key
 	./easyrsa --batch init-pki
 	./easyrsa --batch build-ca nopass
-	./easyrsa --batch --days=3650 build-server-full server nopass
-	./easyrsa --batch --days=3650 build-client-full "$client" nopass
-	./easyrsa --batch --days=3650 gen-crl
-	# Move the stuff we need
-	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
-	# CRL is read with each client connection, while OpenVPN is dropped to nobody
-	chown nobody:"$group_name" /etc/openvpn/server/crl.pem
-	# Without +x in the directory, OpenVPN can't run a stat() on the CRL file
-	chmod o+x /etc/openvpn/server/
-	# Generate key for tls-crypt
-	openvpn --genkey secret /etc/openvpn/server/tc.key
+	./easyrsa gen-tls-crypt-key
 	# Create the DH parameters file using the predefined ffdhe2048 group
 	echo '-----BEGIN DH PARAMETERS-----
 MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
@@ -292,6 +263,19 @@ YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
 7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
 ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 -----END DH PARAMETERS-----' > /etc/openvpn/server/dh.pem
+	# Make easy-rsa aware of our external DH file (prevents a warning)
+	ln -s /etc/openvpn/server/dh.pem pki/dh.pem
+	# Create certificates and CRL
+	./easyrsa --batch --days=3650 build-server-full server nopass
+	./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	./easyrsa --batch --days=3650 gen-crl
+	# Move the stuff we need
+	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
+	cp pki/private/easyrsa-tls.key /etc/openvpn/server/tc.key
+	# CRL is read with each client connection, while OpenVPN is dropped to nobody
+	chown nobody:"$group_name" /etc/openvpn/server/crl.pem
+	# Without +x in the directory, OpenVPN can't run a stat() on the CRL file
+	chmod o+x /etc/openvpn/server/
 	# Generate server.conf
 	echo "local $ip
 port $port
@@ -454,8 +438,8 @@ ignore-unknown-option block-outside-dns
 verb 3" > /etc/openvpn/server/client-common.txt
 	# Enable and start the OpenVPN service
 	systemctl enable --now openvpn-server@server.service
-	# Generates the custom client.ovpn
-	new_client
+	# Build the $client.ovpn file, stripping comments from easy-rsa in the process
+	grep -vh '^#' /etc/openvpn/server/client-common.txt /etc/openvpn/server/easy-rsa/pki/inline/private/"$client".inline > "$script_dir"/"$client".ovpn
 	echo
 	echo "Finished!"
 	echo
@@ -488,8 +472,8 @@ else
 			done
 			cd /etc/openvpn/server/easy-rsa/
 			./easyrsa --batch --days=3650 build-client-full "$client" nopass
-			# Generates the custom client.ovpn
-			new_client
+			# Build the $client.ovpn file, stripping comments from easy-rsa in the process
+			grep -vh '^#' /etc/openvpn/server/client-common.txt /etc/openvpn/server/easy-rsa/pki/inline/private/"$client".inline > "$script_dir"/"$client".ovpn
 			echo
 			echo "$client added. Configuration available in:" "$script_dir"/"$client.ovpn"
 			exit
