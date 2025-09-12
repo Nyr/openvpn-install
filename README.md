@@ -20,3 +20,5 @@ If you want to show your appreciation, you can donate via [PayPal](https://www.p
 
 ### Sponsors
 This project is proudly sponsored by our friends at [FrogeHost](https://froge.host/?utm_source=nyr).
+
+[Clever SaaS](https://www.clever-vpn.net/en?wg-referral=01LOULuQoi) – Launch your professional VPN service in 5 minutes. No tech team needed. Just $1.
