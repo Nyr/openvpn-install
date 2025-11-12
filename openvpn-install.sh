@@ -211,6 +211,37 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 	[[ -z "$client" ]] && client="client"
 	echo
+	echo "Do you want to protect the client with a password?"
+	echo "   1) Yes, use password authentication"
+	echo "   2) No, passwordless (default)"
+	read -p "Password protection [2]: " use_password
+	until [[ -z "$use_password" || "$use_password" =~ ^[12]$ ]]; do
+		echo "$use_password: invalid selection."
+		read -p "Password protection [2]: " use_password
+	done
+	[[ -z "$use_password" ]] && use_password="2"
+	# Get password from user if password protection is enabled
+	if [[ "$use_password" == "1" ]]; then
+		echo
+		while true; do
+			read -s -p "Enter password for client certificate: " client_pass
+			echo
+			read -s -p "Confirm password: " client_pass_confirm
+			echo
+			if [[ "$client_pass" == "$client_pass_confirm" ]]; then
+				if [[ -n "$client_pass" ]]; then
+					break
+				else
+					echo "Password cannot be empty. Please try again."
+					echo
+				fi
+			else
+				echo "Passwords do not match. Please try again."
+				echo
+			fi
+		done
+	fi
+	echo
 	echo "OpenVPN installation is ready to begin."
 	# Install a firewall if firewalld or iptables are not already available
 	if ! systemctl is-active --quiet firewalld.service && ! hash iptables 2>/dev/null; then
@@ -268,7 +299,30 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 	ln -s /etc/openvpn/server/dh.pem pki/dh.pem
 	# Create certificates and CRL
 	./easyrsa --batch --days=3650 build-server-full server nopass
-	./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	if [[ "$use_password" == "1" ]]; then
+		# Install expect if not available
+		if ! hash expect 2>/dev/null; then
+			if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
+				apt-get install -y expect
+			else
+				dnf install -y expect
+			fi
+		fi
+		# Build client with password protection using expect (password already collected earlier)
+		expect << EOF
+spawn ./easyrsa --batch --days=3650 build-client-full "$client"
+expect "Enter PEM pass phrase:"
+send "$client_pass\r"
+expect "Verifying - Enter PEM pass phrase:"
+send "$client_pass\r"
+expect eof
+EOF
+		unset client_pass
+		unset client_pass_confirm
+	else
+		# Build client without password (nopass)
+		./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	fi
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
@@ -475,8 +529,62 @@ else
 				read -p "Name: " unsanitized_client
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
+			echo
+			echo "Do you want to protect the client with a password?"
+			echo "   1) Yes, use password authentication"
+			echo "   2) No, passwordless (default)"
+			read -p "Password protection [2]: " use_password
+			until [[ -z "$use_password" || "$use_password" =~ ^[12]$ ]]; do
+				echo "$use_password: invalid selection."
+				read -p "Password protection [2]: " use_password
+			done
+			[[ -z "$use_password" ]] && use_password="2"
+			# Get password from user if password protection is enabled
+			if [[ "$use_password" == "1" ]]; then
+				echo
+				while true; do
+					read -s -p "Enter password for client certificate: " client_pass
+					echo
+					read -s -p "Confirm password: " client_pass_confirm
+					echo
+					if [[ "$client_pass" == "$client_pass_confirm" ]]; then
+						if [[ -n "$client_pass" ]]; then
+							break
+						else
+							echo "Password cannot be empty. Please try again."
+							echo
+						fi
+					else
+						echo "Passwords do not match. Please try again."
+						echo
+					fi
+				done
+			fi
 			cd /etc/openvpn/server/easy-rsa/
-			./easyrsa --batch --days=3650 build-client-full "$client" nopass
+			if [[ "$use_password" == "1" ]]; then
+				# Install expect if not available
+				if ! hash expect 2>/dev/null; then
+					if [[ "$os" = "debian" || "$os" = "ubuntu" ]]; then
+						apt-get install -y expect
+					else
+						dnf install -y expect
+					fi
+				fi
+				# Build client with password protection using expect (password already collected earlier)
+				expect << EOF
+spawn ./easyrsa --batch --days=3650 build-client-full "$client"
+expect "Enter PEM pass phrase:"
+send "$client_pass\r"
+expect "Verifying - Enter PEM pass phrase:"
+send "$client_pass\r"
+expect eof
+EOF
+				unset client_pass
+				unset client_pass_confirm
+			else
+				# Build client without password (nopass)
+				./easyrsa --batch --days=3650 build-client-full "$client" nopass
+			fi
 			# Build the $client.ovpn file, stripping comments from easy-rsa in the process
 			grep -vh '^#' /etc/openvpn/server/client-common.txt /etc/openvpn/server/easy-rsa/pki/inline/private/"$client".inline > "$script_dir"/"$client".ovpn
 			echo
