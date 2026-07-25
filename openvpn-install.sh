@@ -14,6 +14,16 @@ fi
 # Discard stdin. Needed when running from a one-liner which includes a newline
 read -N 999999 -t 0.001
 
+
+# Determine whether or not clients get passphrases
+
+client_passphrases_file="${HOME}/.openvpn-client-passphrases"
+client_nopass()
+{
+    [ ! -e "${client_passphrases_file}" ] || echo 'nopass'
+}
+
+
 # Detect OS
 # $os_version variables aren't always in use, but are kept here for convenience
 if grep -qs "ubuntu" /etc/os-release; then
@@ -204,6 +214,26 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 			fi
 		done
 	fi
+	until false
+	do
+	    echo
+	    read -p 'Should all client credentials have passphrases? [N/y]: ' config_client_passphrases
+	    case $(echo "${config_client_passphrases}" | tr A-Z a-z) in
+		y*)
+		    touch "${client_passphrases_file}"
+		    break
+		    ;;
+		n*)
+		    break
+		    ;;
+		'')
+		    break
+		    ;;
+		*)
+		    echo
+		    echo 'Invalid input.'
+	esac
+
 	echo
 	echo "Enter a name for the first client:"
 	read -p "Name [client]: " unsanitized_client
@@ -268,7 +298,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 	ln -s /etc/openvpn/server/dh.pem pki/dh.pem
 	# Create certificates and CRL
 	./easyrsa --batch --days=3650 build-server-full server nopass
-	./easyrsa --batch --days=3650 build-client-full "$client" nopass
+	./easyrsa --batch --days=3650 build-client-full "$client" $(client_nopass)
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
@@ -476,7 +506,7 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
-			./easyrsa --batch --days=3650 build-client-full "$client" nopass
+			./easyrsa --batch --days=3650 build-client-full "$client" $(client_nopass)
 			# Build the $client.ovpn file, stripping comments from easy-rsa in the process
 			grep -vh '^#' /etc/openvpn/server/client-common.txt /etc/openvpn/server/easy-rsa/pki/inline/private/"$client".inline > "$script_dir"/"$client".ovpn
 			echo
