@@ -309,7 +309,8 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 	ln -s /etc/openvpn/server/dh.pem pki/dh.pem
 	# Create certificates and CRL
 	./easyrsa --batch --days=3650 build-server-full server nopass
-	[ "$(client_nopass)" ] || echo "Enter passphrase for client '${client}' below."
+	[ "$(client_nopass)" ] \
+	    || echo "Enter passphrase of at least four characters for client '${client}' below."
 	./easyrsa --batch --days=3650 --silent --silent-ssl build-client-full "$client" $(client_nopass)
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
