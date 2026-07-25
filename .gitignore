@@ -1,0 +1,5 @@
+# Script by-products
+*.ovpn
+
+# Editor droppings
+*~
