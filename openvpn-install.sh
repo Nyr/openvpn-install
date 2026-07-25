@@ -20,7 +20,7 @@ read -N 999999 -t 0.001
 client_passphrases_file="${HOME}/.openvpn-client-passphrases"
 client_nopass()
 {
-    [ ! -e "${client_passphrases_file}" ] || echo 'nopass'
+    [ -e "${client_passphrases_file}" ] || echo 'nopass'
 }
 
 
@@ -217,22 +217,26 @@ if [[ ! -e /etc/openvpn/server/server.conf ]]; then
 	until false
 	do
 	    echo
-	    read -p 'Should all client credentials have passphrases? [N/y]: ' config_client_passphrases
-	    case $(echo "${config_client_passphrases}" | tr A-Z a-z) in
+	    read -p 'Should all client credentials have passphrases? [y/N]: ' config_client_passphrases
+	    case "$(echo ${config_client_passphrases} | tr A-Z a-z)" in
 		y*)
 		    touch "${client_passphrases_file}"
 		    break
 		    ;;
 		n*)
+		    rm -rf "${client_passphrases_file}"
 		    break
 		    ;;
 		'')
+		    rm -rf "${client_passphrases_file}"
 		    break
 		    ;;
 		*)
 		    echo
 		    echo 'Invalid input.'
-	esac
+		    ;;
+	    esac
+	done
 
 	echo
 	echo "Enter a name for the first client:"
@@ -298,6 +302,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 	ln -s /etc/openvpn/server/dh.pem pki/dh.pem
 	# Create certificates and CRL
 	./easyrsa --batch --days=3650 build-server-full server nopass
+	[ "$(client_nopass)" ] || echo "Enter passphrase for client '${client}' below."
 	./easyrsa --batch --days=3650 build-client-full "$client" $(client_nopass)
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
@@ -599,6 +604,7 @@ else
 					dnf remove -y openvpn
 					rm -rf /etc/openvpn/server
 				fi
+				rm -rf "${client_passphrases_file}"
 				echo
 				echo "OpenVPN removed!"
 			else
