@@ -303,7 +303,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 	# Create certificates and CRL
 	./easyrsa --batch --days=3650 build-server-full server nopass
 	[ "$(client_nopass)" ] || echo "Enter passphrase for client '${client}' below."
-	./easyrsa --batch --days=3650 build-client-full "$client" $(client_nopass)
+	./easyrsa --batch --days=3650 --silent --silent-ssl build-client-full "$client" $(client_nopass)
 	./easyrsa --batch --days=3650 gen-crl
 	# Move the stuff we need
 	cp pki/ca.crt pki/private/ca.key pki/issued/server.crt pki/private/server.key pki/crl.pem /etc/openvpn/server
@@ -511,7 +511,7 @@ else
 				client=$(sed 's/[^0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_-]/_/g' <<< "$unsanitized_client")
 			done
 			cd /etc/openvpn/server/easy-rsa/
-			./easyrsa --batch --days=3650 build-client-full "$client" $(client_nopass)
+			./easyrsa --batch --days=3650 --silent --silent-ssl build-client-full "$client" $(client_nopass)
 			# Build the $client.ovpn file, stripping comments from easy-rsa in the process
 			grep -vh '^#' /etc/openvpn/server/client-common.txt /etc/openvpn/server/easy-rsa/pki/inline/private/"$client".inline > "$script_dir"/"$client".ovpn
 			echo
